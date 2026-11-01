@@ -29,9 +29,9 @@ If GitHub issue/comments cannot be read, report this as a connectivity blocker, 
 - Do not commit secrets or credentials. Report unsupported claims, missing dependencies and verification gaps accurately.
 - Keep tests, CI, Windows packaging and documentation aligned with implemented code. Do not claim Windows runtime testing unless it actually happened.
 
-## Private staging safeguards
+## Public review safeguards
 
-Developed by ECHELON APPLIED SYSTEMS. The repository remains private and GitHub Actions remain disabled by Product Owner direction. Do not change visibility, enable CI, merge, publish, release, deploy or spend without explicit Product Owner approval. NAVCOM is planned and nonfunctional. Multiple windows, saved workspaces, SQLite and optional AI remain future work.
+Developed by ECHELON APPLIED SYSTEMS. The repository is public and GitHub Actions are enabled by Product Owner approval. Automatic frontend checks and explicitly requested Windows builds follow the workflow documented in README.md. Do not change visibility, enable CI, merge, publish, release, deploy or spend without explicit Product Owner approval. NAVCOM is planned and nonfunctional. Multiple windows, saved workspaces, SQLite and optional AI remain future work.
 
 Check all holds and superseding instructions before selecting a task. A matching blocked response may be retried only on an explicit active user retry. After posting a handover, independently fetch it and verify its content and author. Stop after reporting; do not automatically begin another milestone.
 

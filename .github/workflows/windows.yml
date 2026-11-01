@@ -1,9 +1,12 @@
-name: Windows desktop
+name: Continuous checks and on-demand Windows build
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
   push:
     branches: [main]
+
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -13,8 +16,41 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  frontend:
+    name: Frontend checks
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' &&
+       contains(fromJSON('["opened", "synchronize", "reopened"]'), github.event.action))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Clean frontend install
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Formatting
+        run: npm run format:check
+      - name: Type checking
+        run: npm run typecheck
+      - name: Unit and component tests
+        run: npm test
+      - name: Frontend production build
+        run: npm run build
   desktop:
     name: Windows checks and unsigned installer
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.event.action == 'labeled' &&
+       github.event.label.name == 'run-windows-build')
     runs-on: windows-latest
     timeout-minutes: 40
     steps:

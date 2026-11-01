@@ -6,11 +6,11 @@ Developed by ECHELON APPLIED SYSTEMS.
 
 Development is in progress. NAVCOM is planned and not yet functional.
 
-## M1-A private review stage
+## M1-A public review stage
 
 The feature branch stages the desktop foundation: a graphite shell, static typed module registry and read-only desktop metadata connection. NAVCOM remains planned and nonfunctional; this build does not connect to EVE or provide navigation.
 
-The repository remains private and Product Owner reports GitHub Actions disabled. The included workflow describes future checks only; do not enable or run CI without separate approval. Fresh target CI and Windows native runtime/installer smoke validation remain outstanding. This migration is an unmerged draft for independent review, not acceptance or release.
+The repository is public and GitHub Actions are enabled. The first controlled [Windows CI run](https://github.com/ECHELON-APPLIED-SYSTEMS/echelon-os/actions/runs/41255882419) passed frontend checks, Rust checks/tests, and unsigned EXE/NSIS builds. This is an unmerged draft for independent review, not acceptance or release. Native launch and Desktop connected status were reported by the Product Owner; full keyboard/accessibility/scaling and runtime smoke validation remain outstanding. Standalone distribution is the primary direction; full portability is not implemented or validated, and NSIS is secondary evidence.
 
 ## Windows prerequisites
 
@@ -56,7 +56,17 @@ npm run tauri -- build --bundles nsis --no-sign -- --locked
 
 The executable is `src-tauri/target/release/echelon-os.exe`; the per-user NSIS installer is under `src-tauri/target/release/bundle/nsis/`. These builds are unsigned; Windows may show the expected untrusted publisher/SmartScreen prompt. Signing, releases and publishing are outside M1-A. The installer can download Microsoft's WebView2 bootstrapper if WebView2 is missing; application startup itself makes no service calls.
 
-When separately authorised and enabled, `.github/workflows/windows.yml` is configured to run every listed check on `windows-latest` for pull requests and pushes to `main`, including draft PRs. It builds the application and NSIS installer and uploads both as a seven-day artifact named `echelon-os-windows-unsigned-<commit SHA>`. Missing artifacts fail the upload step. The workflow has read-only repository permissions, no signing/publishing step and no secret requirements. See the actual PR Actions run for results; a configured workflow is not a successful build.
+### Continuous and on-demand CI
+
+`.github/workflows/windows.yml` runs lightweight frontend checks on standard `ubuntu-latest` for PR opened/synchronize/reopened events and pushes to `main`, including draft PRs: `npm ci`, lint, formatting, strict type checking, unit/component tests and production frontend build. These runs do not build installers or upload artifacts.
+
+Full validation uses standard `windows-latest` only on an explicit `workflow_dispatch` request or a PR `labeled` event whose newly applied label is exactly `run-windows-build`. It preserves every frontend/Rust check and builds the unsigned EXE and optional NSIS installer. A label remaining on a PR does not trigger Windows builds on subsequent commits; a maintainer must deliberately apply it again for another requested build. Do not create/apply this label or request a full build without the relevant approval.
+
+Before merge, a maintainer can explicitly request the full build by applying `run-windows-build` to the PR. Manual **Run workflow** / `workflow_dispatch` becomes available only after this workflow exists on the default branch; then select the intended ref explicitly. Neither a normal PR update nor a `main` push requests a Windows build. No full build is requested by this CI split.
+
+Full builds upload the EXE and NSIS installer as a **one-day** artifact named `echelon-os-windows-unsigned-<github.sha>`. For PR events, this SHA is the generated test merge ref, not the feature head; verify its parents. Missing artifacts fail upload. Permissions remain read-only, with no signing/publishing step or secret requirements. Download only the intended run's artifact before expiry. Standard public hosted-runner time is free, while artifact storage has a finite shared allowance; respect approved spending safeguards and do not infer zero charges from a successful run.
+
+The first controlled Windows run is historical build/test evidence, not manual runtime or installer acceptance. See `docs/SMOKE_TEST.md`; NSIS install/uninstall checks are optional secondary distribution validation. A future portable ZIP/data-path task requires separate approval.
 
 Linux frontend checks work with Node 24. Native Linux Tauri compilation additionally needs system development packages including GLib, GTK 3 and WebKitGTK 4.1. This project targets Windows; missing Linux packages must be reported as a validation limitation, not a passing Rust check.
 
