@@ -56,6 +56,82 @@ fn same(a: &Metadata, b: &Metadata) -> bool {
         a.len() == b.len() && a.modified().ok() == b.modified().ok()
     }
 }
+// Directory identity is separate from snapshot FILE metadata/content checks.
+// On Windows, the first verified no-follow handle is the authoritative anchor.
+// All ancestor handles stay open without FILE_SHARE_DELETE, preventing accepted
+// objects from being renamed/deleted. Reopen the fixed path without following
+// reparse points and compare volume + 128-bit file ID to that retained handle.
+// Child activity may change directory timestamps; it does not change object ID.
+// This retains PortableStore's same-user trust model, not a hostile-process sandbox.
+fn same_directory(
+    _path: &Path,
+    prior: &Metadata,
+    current: &Metadata,
+    _held: &File,
+) -> Result<bool, SnapshotError> {
+    #[cfg(windows)]
+    {
+        if link(prior) || link(current) || !prior.is_dir() || !current.is_dir() {
+            return Ok(false);
+        }
+        let reopened = open(_path, true)?;
+        let equal = windows_directory_identity(_held)? == windows_directory_identity(&reopened)?;
+        #[cfg(test)]
+        if !equal {
+            eprintln!("NAVCOM_DIRECTORY_IDENTITY same_object=false");
+        }
+        Ok(equal)
+    }
+    #[cfg(not(windows))]
+    {
+        Ok(same(prior, current))
+    }
+}
+
+#[cfg(windows)]
+#[repr(C)]
+#[derive(PartialEq, Eq)]
+struct WindowsDirectoryIdentity {
+    volume_serial_number: u64,
+    file_id: [u8; 16],
+}
+
+#[cfg(windows)]
+fn windows_directory_identity(file: &File) -> Result<WindowsDirectoryIdentity, SnapshotError> {
+    use std::os::windows::io::AsRawHandle;
+    // FILE_ID_INFO: ULONGLONG volume serial followed by FILE_ID_128.
+    // Use Win32 directly: stable Rust 1.90 MetadataExt file IDs are unavailable.
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        fn GetFileInformationByHandleEx(
+            handle: *mut std::ffi::c_void,
+            class: i32,
+            buffer: *mut std::ffi::c_void,
+            size: u32,
+        ) -> i32;
+    }
+    let m = file.metadata().map_err(|_| SnapshotError::Unreadable)?;
+    if link(&m) || !m.is_dir() {
+        return Err(SnapshotError::UnsafePath);
+    }
+    let mut identity = std::mem::MaybeUninit::<WindowsDirectoryIdentity>::zeroed();
+    // FileIdInfo = 18. Handle remains owned/alive; correctly aligned repr(C)
+    // buffer is exactly FILE_ID_INFO. Read it only after API success. Unsupported
+    // filesystems and API errors fail closed, never fall back to timestamps.
+    let success = unsafe {
+        GetFileInformationByHandleEx(
+            file.as_raw_handle(),
+            18,
+            identity.as_mut_ptr().cast(),
+            std::mem::size_of::<WindowsDirectoryIdentity>() as u32,
+        )
+    };
+    if success == 0 {
+        return Err(SnapshotError::Unreadable);
+    }
+    Ok(unsafe { identity.assume_init() })
+}
+
 // Diagnostics exist only in unit-test binaries; no paths or data are accepted.
 #[cfg(test)]
 thread_local! {
@@ -75,7 +151,7 @@ fn changed_diagnostic(
         }
     });
     eprintln!(
-        "NAVCOM_READ_CHANGED stage={stage} ancestor_index={ancestor_index:?} metadata_present={} link={:?} directory={:?} regular_file={:?} size_equal={:?} mtime_equal={:?} identity_equal={:?} read_size_equal={:?}",
+        "NAVCOM_READ_CHANGED stage={stage} ancestor_index={ancestor_index:?} metadata_present={} link={:?} directory={:?} regular_file={:?} size_equal={:?} mtime_equal={:?} metadata_same_equal={:?} read_size_equal={:?}",
         after.is_some(),
         after.map(link),
         after.map(Metadata::is_dir),
@@ -140,7 +216,7 @@ fn read_with_hook(
         }
         let handle = open(path, true)?;
         let opened_directory = handle.metadata().map_err(|_| SnapshotError::Unreadable)?;
-        if !same(&m, &opened_directory) {
+        if !same_directory(path, &m, &opened_directory, &handle)? {
             #[cfg(test)]
             changed_diagnostic(
                 "ancestor-pre-open",
@@ -162,7 +238,7 @@ fn read_with_hook(
     }
     let dh = open(&directory, true)?;
     let opened_directory = dh.metadata().map_err(|_| SnapshotError::Unreadable)?;
-    if !same(&dm, &opened_directory) {
+    if !same_directory(&directory, &dm, &opened_directory, &dh)? {
         #[cfg(test)]
         changed_diagnostic(
             "navcom-pre-open",
@@ -230,7 +306,7 @@ fn read_with_hook(
         );
         return Err(SnapshotError::Changed);
     }
-    for (path, prior, _handle) in &guards {
+    for (path, prior, handle) in &guards {
         let now = metadata(path)?;
         #[cfg(test)]
         if now.is_none() {
@@ -243,7 +319,7 @@ fn read_with_hook(
             );
         }
         let now = now.ok_or(SnapshotError::Changed)?;
-        if link(&now) || !now.is_dir() || !same(prior, &now) {
+        if link(&now) || !now.is_dir() || !same_directory(path, prior, &now, handle)? {
             #[cfg(test)]
             changed_diagnostic(
                 "ancestor-post-read",
@@ -475,6 +551,97 @@ mod tests {
         })
         .is_err());
     }
+    #[test]
+    fn sibling_activity_and_directory_mtime_do_not_replace_object() {
+        let f = Fixture::new();
+        let store = f.store();
+        let navcom = store.root().join("navcom");
+        fs::create_dir(&navcom).unwrap();
+        fs::write(navcom.join("snapshot.json"), b"fiction").unwrap();
+        let before = fs::metadata(&f.0).unwrap().modified().unwrap();
+        assert_eq!(
+            read_with_hook(store.root(), || {
+                fs::create_dir(f.0.join("unrelated-fiction-sibling")).unwrap();
+                #[cfg(windows)]
+                let directory = {
+                    use std::os::windows::fs::OpenOptionsExt;
+                    // Test-only FILE_WRITE_ATTRIBUTES, backup semantics and no-follow.
+                    OpenOptions::new()
+                        .access_mode(0x100)
+                        .share_mode(1 | 2 | 4)
+                        .custom_flags(0x0200_0000 | 0x0020_0000)
+                        .open(&f.0)
+                        .unwrap()
+                };
+                #[cfg(not(windows))]
+                let directory = File::open(&f.0).unwrap();
+                directory
+                    .set_times(
+                        std::fs::FileTimes::new()
+                            .set_modified(before + std::time::Duration::from_secs(2)),
+                    )
+                    .unwrap();
+                assert_ne!(fs::metadata(&f.0).unwrap().modified().unwrap(), before);
+            }),
+            Ok(Some("fiction".into()))
+        );
+    }
+
+    #[test]
+    fn snapshot_file_swap_still_fails_closed() {
+        let f = Fixture::new();
+        let store = f.store();
+        let navcom = store.root().join("navcom");
+        fs::create_dir(&navcom).unwrap();
+        let path = navcom.join("snapshot.json");
+        fs::write(&path, b"fiction").unwrap();
+        assert_eq!(
+            read_with_hook(store.root(), || {
+                fs::rename(&path, navcom.join("original-fiction")).unwrap();
+                fs::write(&path, b"changed-fiction").unwrap();
+            }),
+            Err(SnapshotError::Changed)
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_directory_ids_reject_different_objects_and_hold_rename_guard() {
+        let f = Fixture::new();
+        let store = f.store();
+        let navcom = store.root().join("navcom");
+        fs::create_dir(&navcom).unwrap();
+        let other = store.root().join("other-fiction");
+        fs::create_dir(&other).unwrap();
+        let held = open(&navcom, true).unwrap();
+        let reopened = open(&navcom, true).unwrap();
+        let different = open(&other, true).unwrap();
+        assert!(
+            windows_directory_identity(&held).unwrap()
+                == windows_directory_identity(&reopened).unwrap()
+        );
+        assert!(
+            windows_directory_identity(&held).unwrap()
+                != windows_directory_identity(&different).unwrap()
+        );
+        assert!(!same_directory(
+            &other,
+            &held.metadata().unwrap(),
+            &different.metadata().unwrap(),
+            &held
+        )
+        .unwrap());
+        assert!(fs::rename(&navcom, store.root().join("renamed-fiction")).is_err());
+        // Rejected replacement did not erase or redirect the original fixed path.
+        assert!(same_directory(
+            &navcom,
+            &held.metadata().unwrap(),
+            &reopened.metadata().unwrap(),
+            &held
+        )
+        .unwrap());
+    }
+
     #[cfg(windows)]
     #[test]
     fn junction_parent_is_unsafe() {
