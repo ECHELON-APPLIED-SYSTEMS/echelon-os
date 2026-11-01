@@ -45,7 +45,7 @@ jobs:
       - name: Frontend production build
         run: npm run build
   desktop:
-    name: Windows checks and unsigned installer
+    name: Windows checks and portable ZIP
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' &&
@@ -85,14 +85,23 @@ jobs:
         run: cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets -- -D warnings
       - name: Rust tests
         run: cargo test --manifest-path src-tauri/Cargo.toml --locked --all-targets
-      - name: Build unsigned Windows application and NSIS installer
-        run: npm run tauri -- build --bundles nsis --no-sign -- --locked
+      - name: Build unsigned portable Windows application
+        run: npm run tauri -- build --no-bundle -- --locked
+      - name: Package portable Windows ZIP
+        shell: pwsh
+        run: |
+          $stage = 'src-tauri/target/release/portable/ECHELON-OS'
+          New-Item -ItemType Directory -Path $stage -ErrorAction Stop | Out-Null
+          Copy-Item 'src-tauri/target/release/echelon-os.exe' "$stage/echelon-os.exe" -ErrorAction Stop
+          Copy-Item 'docs/PORTABLE.md' "$stage/README.txt" -ErrorAction Stop
+          $files = @(Get-ChildItem $stage -Recurse -File)
+          if ($files.Count -ne 2 -or (Test-Path "$stage/app-data")) { throw 'Unexpected portable payload' }
+          if (($files | Measure-Object -Property Length -Sum).Sum -gt 50MB) { throw 'Portable payload exceeds 50 MiB guard' }
+          Compress-Archive -Path $stage -DestinationPath 'src-tauri/target/release/portable/echelon-os-portable-windows-x64.zip' -ErrorAction Stop
       - name: Upload unsigned Windows artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: echelon-os-windows-unsigned-${{ github.sha }}
-          path: |
-            src-tauri/target/release/echelon-os.exe
-            src-tauri/target/release/bundle/nsis/*.exe
+          name: echelon-os-portable-windows-unsigned-${{ github.sha }}
+          path: src-tauri/target/release/portable/echelon-os-portable-windows-x64.zip
           if-no-files-found: error
           retention-days: 1

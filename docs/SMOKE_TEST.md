@@ -25,3 +25,17 @@ Record Windows version, WebView2 version, commit SHA, build command or Actions r
 | Planned NAVCOM / honest preview       | Not performed     |
 | Release CSP and IPC                   | Not performed     |
 | Per-user install / launch / uninstall | Not performed     |
+
+## M1-B portable acceptance — not performed
+
+The primary M1-B target is the portable ZIP. Historical M1-A NSIS results remain above; NSIS generation is retired for new builds. No new Windows build or smoke test is implied by this procedure.
+
+1. After a separately approved on-demand Windows build, record exact PR head, generated merge/ref SHA, run URL, artifact/ZIP hash, OS/WebView2 version and each result. Extract `echelon-os-portable-windows-x64.zip` into a writable folder; confirm payload is exactly `ECHELON-OS/echelon-os.exe` and `README.txt`, with no app-data or installer.
+2. Launch without install/elevation from a different working directory (for example PowerShell's home). Confirm graphite shell, **Desktop connected** and NAVCOM planned/details/navigation. Inspect `app-data` beside the EXE: settings version 1/empty preferences, cache/log directories and WebView profile. Confirm no new app-specific `com.echelon-os.desktop` data appeared in default roaming/local AppData; compare before/after snapshots. Distinguish application-owned writes from unavoidable OS/WebView runtime activity.
+3. Close all copies. Record settings bytes/hash. Relaunch and confirm unchanged settings are reused. Move the entire folder to another writable directory, then another drive/removable device; relaunch and verify settings bytes remain unchanged and the WebView uses the moved data. Record actual filesystems. Do not infer cross-machine portability from a same-drive rename.
+4. With a backup preserved, deny directory writes to the regular test user (folder readonly attribute alone is insufficient on Windows). Launch and confirm a clear recovery dialog, no WebView/ready shell, no global/CWD/temp fallback and no overwritten settings. Restore ACL permissions, retry and confirm recovery. Do not run as administrator to make it pass.
+5. In an isolated copy, test malformed, unsupported-version, oversized and extra-field settings. Confirm explicit failure without reset; retain original bytes, restore a known-good backup and retry. Test app-data/settings/cache symlinks or junctions pointing outside the folder; they must be rejected with no target writes. Do not perform these tests against real user data.
+6. Test missing Evergreen WebView2 on an isolated suitable machine; confirm readable startup recovery guidance and no automatic runtime install. Reinstall/repair only from Microsoft through an owner-approved route. Do not remove shared WebView2 from a primary machine for this check.
+7. Repeat keyboard-only navigation/focus, window resize/minimise/restore/close/relaunch, scaling and accessibility checks. Record which checks were actually performed. Confirm no app updater/autostart/registry setup or extra application-managed background process.
+
+M1-B Windows build, ZIP payload, real profile placement, ACL denial, cross-drive move, no-AppData comparison and runtime smoke: **Not performed** pending separate authorisation. Automated storage tests cannot substitute for these checks. No theme preference or general settings editor exists; persistence is exercised by the internal Rust seam and read-only startup/reload behavior.

@@ -6,11 +6,11 @@ Developed by ECHELON APPLIED SYSTEMS.
 
 Development is in progress. NAVCOM is planned and not yet functional.
 
-## M1-A public review stage
+## M1-B portable foundation review
 
-The feature branch stages the desktop foundation: a graphite shell, static typed module registry and read-only desktop metadata connection. NAVCOM remains planned and nonfunctional; this build does not connect to EVE or provide navigation.
+M1-A is merged. M1-B adds a Rust-owned, versioned non-sensitive startup settings store and a portable Windows ZIP packaging path. NAVCOM remains planned/nonfunctional, and no EVE services or themes are implemented. See [portable operation and recovery](docs/PORTABLE.md).
 
-The repository is public and GitHub Actions are enabled. The first controlled [Windows CI run](https://github.com/ECHELON-APPLIED-SYSTEMS/echelon-os/actions/runs/41255882419) passed frontend checks, Rust checks/tests, and unsigned EXE/NSIS builds. This is an unmerged draft for independent review, not acceptance or release. Native launch and Desktop connected status were reported by the Product Owner; full keyboard/accessibility/scaling and runtime smoke validation remain outstanding. Standalone distribution is the primary direction; full portability is not implemented or validated, and NSIS is secondary evidence.
+The repository is public with automatic lightweight frontend CI and explicitly requested full Windows validation. Historical [M1-A Windows CI](https://github.com/ECHELON-APPLIED-SYSTEMS/echelon-os/actions/runs/41255882419) passed its native checks/build; the owner reported standalone launch, metadata IPC, keyboard and window behavior. **M1-B native build, ZIP and storage smoke tests are pending separate approval**. Prior evidence does not validate the new storage behavior or establish full portability/release acceptance.
 
 ## Windows prerequisites
 
@@ -18,7 +18,7 @@ The repository is public and GitHub Actions are enabled. The first controlled [W
 - Node.js **24 LTS** and its bundled npm; Git.
 - Rust via [rustup](https://rustup.rs/), using the MSVC host. The repository pins **Rust 1.90.0**, rustfmt and Clippy in `rust-toolchain.toml`.
 - Visual Studio 2022 Build Tools: **Desktop development with C++**, MSVC v143 x64/x86 tools and a Windows 10/11 SDK.
-- Internet access for initial npm/Cargo downloads and Tauri's NSIS tooling. No application credentials or signing certificate are required.
+- Internet access for initial npm/Cargo downloads and Tauri's build dependencies. No application credentials or signing certificate are required.
 
 Use a regular PowerShell terminal after installing prerequisites. Application development and the per-user installer do not require an elevated terminal.
 
@@ -27,7 +27,7 @@ Use a regular PowerShell terminal after installing prerequisites. Application de
 ```powershell
 git clone https://github.com/ECHELON-APPLIED-SYSTEMS/echelon-os.git
 cd echelon-os
-# During review, check out the M1-A PR branch before installing.
+# During review, check out the M1-B PR branch before installing.
 npm ci
 rustup show active-toolchain
 npm run tauri -- dev
@@ -49,24 +49,26 @@ npm run build
 cargo fmt --manifest-path src-tauri/Cargo.toml --all --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets -- -D warnings
 cargo test --manifest-path src-tauri/Cargo.toml --locked --all-targets
-npm run tauri -- build --bundles nsis --no-sign -- --locked
+npm run tauri -- build --no-bundle -- --locked
 ```
 
 `npm run format` applies frontend/document formatting; Cargo formats Rust separately. `npm run test:watch` is available during development. Frontend tests exercise registry validation, availability views, metadata response validation and visible pending/error/retry states. Rust tests check the service, serialized command contract and IPC dispatch against the real generated ACL using Tauri's mock runtime: local main-window access is allowed, while another window, a remote origin and an unknown command are denied. These tests do not substitute for a real Windows WebView smoke test.
 
-The executable is `src-tauri/target/release/echelon-os.exe`; the per-user NSIS installer is under `src-tauri/target/release/bundle/nsis/`. These builds are unsigned; Windows may show the expected untrusted publisher/SmartScreen prompt. Signing, releases and publishing are outside M1-A. The installer can download Microsoft's WebView2 bootstrapper if WebView2 is missing; application startup itself makes no service calls.
+The executable is `src-tauri/target/release/echelon-os.exe`. All supported desktop builds now use executable-adjacent `app-data`, including development under the target tree; NSIS is no longer generated/supported. No installed/nonportable flavour remains, so the relative Tauri override is intentionally shared. Browser preview creates no native files. Startup fails recoverably before WebView creation if storage is unsafe, unwritable, corrupt or incompatible; it never silently resets settings or chooses another location.
+
+These builds are unsigned; Windows may show expected publisher/SmartScreen warnings. No installer, registry setup or elevation is required. OS-provided Microsoft Edge WebView2 Evergreen is required and is not bundled or installed by this app. Signing, release publication and dependency-free runtime bundling are outside M1-B.
 
 ### Continuous and on-demand CI
 
 `.github/workflows/windows.yml` runs lightweight frontend checks on standard `ubuntu-latest` for PR opened/synchronize/reopened events and pushes to `main`, including draft PRs: `npm ci`, lint, formatting, strict type checking, unit/component tests and production frontend build. These runs do not build installers or upload artifacts.
 
-Full validation uses standard `windows-latest` only on an explicit `workflow_dispatch` request or a PR `labeled` event whose newly applied label is exactly `run-windows-build`. It preserves every frontend/Rust check and builds the unsigned EXE and optional NSIS installer. A label remaining on a PR does not trigger Windows builds on subsequent commits; a maintainer must deliberately apply it again for another requested build. Do not create/apply this label or request a full build without the relevant approval.
+Full validation uses standard `windows-latest` only on an explicit `workflow_dispatch` request or a PR `labeled` event whose newly applied label is exactly `run-windows-build`. It preserves every frontend/Rust check and builds the unsigned EXE and portable ZIP. A label remaining on a PR does not trigger Windows builds on subsequent commits; a maintainer must deliberately apply it again for another requested build. Do not create/apply this label or request a full build without the relevant approval.
 
 Before merge, a maintainer can explicitly request the full build by applying `run-windows-build` to the PR. Manual **Run workflow** / `workflow_dispatch` becomes available only after this workflow exists on the default branch; then select the intended ref explicitly. Neither a normal PR update nor a `main` push requests a Windows build. No full build is requested by this CI split.
 
-Full builds upload the EXE and NSIS installer as a **one-day** artifact named `echelon-os-windows-unsigned-<github.sha>`. For PR events, this SHA is the generated test merge ref, not the feature head; verify its parents. Missing artifacts fail upload. Permissions remain read-only, with no signing/publishing step or secret requirements. Download only the intended run's artifact before expiry. Standard public hosted-runner time is free, while artifact storage has a finite shared allowance; respect approved spending safeguards and do not infer zero charges from a successful run.
+Full builds stage only the unsigned EXE and portable README in an extract-and-run `ECHELON-OS` folder, enforce a 50 MiB payload guard and upload `echelon-os-portable-windows-x64.zip` as a **one-day** artifact named `echelon-os-portable-windows-unsigned-<github.sha>`. No app-data is populated or packaged in CI. For PR events, the SHA is the generated test merge ref; verify its parents. Permissions remain read-only, with no publishing step or secrets. Standard public hosted-runner time is free, while artifact storage has a finite shared allowance; respect approved spending safeguards.
 
-The first controlled Windows run is historical build/test evidence, not manual runtime or installer acceptance. See `docs/SMOKE_TEST.md`; NSIS install/uninstall checks are optional secondary distribution validation. A future portable ZIP/data-path task requires separate approval.
+This packaging path is pending separate Windows build approval; no full run is triggered by M1-B. Historical M1-A NSIS evidence remains historical, and new NSIS acceptance is not required. See `docs/SMOKE_TEST.md` for pending portable runtime, data isolation, move/relaunch and recovery checks.
 
 Linux frontend checks work with Node 24. Native Linux Tauri compilation additionally needs system development packages including GLib, GTK 3 and WebKitGTK 4.1. This project targets Windows; missing Linux packages must be reported as a validation limitation, not a passing Rust check.
 
@@ -91,14 +93,14 @@ Runtime dependencies are React/React DOM **19.3.1** and Tauri JS API **2.12.4**.
 ## Security and resource boundaries
 
 - Windows application and test executables embed a Common Controls v6 manifest with `asInvoker` privileges. The manifest is linked to all targets because Tauri's default binary-only resource embedding leaves library unit-test executables without the v6 activation context. `embed-resource` was already a transitive build dependency; no runtime dependency was added.
-- Only `get_app_metadata` is exposed, with no caller arguments. It returns compile-time name/version, platform and milestone. No process execution, file access, credentials or network services are exposed.
+- Only `get_app_metadata` is exposed, with no caller arguments. It returns compile-time name/version, platform and milestone. No process execution, arbitrary file access, credentials or network services are exposed to IPC. Rust performs narrowly scoped startup storage before opening a WebView; no settings write command exists.
 - `build.rs` declares the command to Tauri's application ACL generator. The `main-metadata` capability grants only `allow-get-app-metadata` to the local `main` window. There are no core default permissions, remote capability origins, or shell/filesystem/HTTP plugins.
 - Production CSP permits bundled scripts/styles and Tauri's local IPC transport (`ipc:` / `http://ipc.localhost`). Objects, frames and forms are blocked. Development additionally permits Vite's loopback HTTP/WebSocket, inline styles for CSS hot reload, and the specific SHA-256 hash of the pinned React refresh bootstrap. It does not allow arbitrary inline scripts. Vite dev/preview serve the same CSP headers, so browser checks exercise these policies; recheck the bootstrap hash when upgrading the React Vite plugin. There is no production `unsafe-inline` or `unsafe-eval`. Tauri may add its own asset hashes/nonces when embedding resources.
 - The shell reads metadata once on mount or on explicit retry, without polling, background services, telemetry, external fonts, animations or GPU effects. React StrictMode can repeat effect setup in development.
 - Graphite colours, muted teal focus, keyboard navigation, skip link, live status and visible error/empty states are included. Remote content is not loaded. An unavailable module opens an information view, not a simulated operational tool.
 
-## M1-A limits
+## Current limits
 
-No detached/multiple-window management, workspace restoration, monitor recovery, SQLite, persistent settings, EVE SSO/ESI, route calculations, intelligence feeds, AI, overlays or game interaction is implemented. The shell's current selection is in memory only. Diagnostic/packaging hardening and recovery signoff remain later work. Windows manual runtime validation must be recorded separately using the smoke plan; do not infer it from frontend tests, Rust unit tests or an installer build.
+No detached/multiple-window management, workspace restoration, monitor recovery, SQLite, user-editable settings, EVE SSO/ESI, route calculations, intelligence feeds, AI, overlays or game interaction is implemented. The shell's current selection is in memory only. The version-1 settings schema contains only an empty typed preferences object; future preferences need explicit validation and update/migration design. Diagnostic/packaging hardening and recovery signoff remain later work. Windows manual runtime validation must be recorded separately using the smoke plan; do not infer it from frontend tests, Rust unit tests or an installer build.
 
 Coordination and scope approval remain in [Issue #1](https://github.com/ECHELON-APPLIED-SYSTEMS/echelon-os/issues/1). Follow `AGENTS.md` and `docs/HANDOVER.md`; Product Owner approval is required for merging and release.
