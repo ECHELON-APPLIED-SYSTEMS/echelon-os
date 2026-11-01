@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { readNavcomSnapshot } from '../../services/navcomSnapshot';
 import type { NavcomSnapshotResult } from '../../services/navcomSnapshot';
 import type { RouteResult } from './routing';
@@ -34,53 +34,135 @@ function Endpoint({
   onSelect: (id: number | null) => void;
 }) {
   const [query, setQuery] = useState('');
-  const [selected, setSelected] = useState('');
-  const matches = snapshot.searchSystems(query);
+  const [selected, setSelected] = useState<
+    ReturnType<Loaded['searchSystems']>[number] | null
+  >(null);
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(-1);
+  const input = useRef<HTMLInputElement>(null);
+  const list = useRef<HTMLUListElement>(null);
+  const id = useId();
+  const listId = `${id}-matches`;
+  const hintId = `${id}-hint`;
+  const matches = snapshot.searchSystems(
+    selected ? String(selected.id) : query,
+  );
+  const expanded = open && query.trim().length > 0;
+  const activeOption = expanded ? matches[active] : undefined;
+  const optionId = (systemId: number) => `${id}-system-${systemId}`;
+  useEffect(() => {
+    if (expanded && active >= 0)
+      list.current?.children
+        .item(active)
+        ?.scrollIntoView?.({ block: 'nearest' });
+  }, [active, expanded]);
+  function choose(system: (typeof matches)[number]) {
+    input.current?.focus();
+    setQuery(system.name ? `${system.name} — ${system.id}` : String(system.id));
+    setSelected(system);
+    setOpen(false);
+    setActive(-1);
+    onSelect(system.id);
+  }
   return (
-    <fieldset className="navcom-endpoint">
-      <legend>{label}</legend>
-      <label>
-        Search {label.toLowerCase()} by name or ID
+    <div className="navcom-endpoint">
+      <label htmlFor={id}>{label} system</label>
+      <div className="navcom-combobox">
         <input
-          type="search"
+          ref={input}
+          id={id}
+          role="combobox"
+          type="text"
           value={query}
           maxLength={64}
           autoComplete="off"
+          spellCheck={false}
+          aria-autocomplete="list"
+          aria-expanded={expanded}
+          aria-controls={expanded ? listId : undefined}
+          aria-activedescendant={
+            activeOption ? optionId(activeOption.id) : undefined
+          }
+          aria-describedby={hintId}
+          onFocus={() => {
+            setOpen(true);
+            setActive(-1);
+          }}
+          onBlur={() => {
+            setOpen(false);
+            setActive(-1);
+          }}
           onChange={(e) => {
             setQuery(e.target.value);
-            setSelected('');
+            setSelected(null);
+            setActive(-1);
+            setOpen(true);
             onSelect(null);
           }}
-        />
-      </label>
-      <label>
-        {label} system
-        <select
-          value={selected}
-          onChange={(e) => {
-            const match = matches.find(
-              (system) => String(system.id) === e.target.value,
-            );
-            setSelected(match ? String(match.id) : '');
-            onSelect(match?.id ?? null);
+          onKeyDown={(e) => {
+            if (e.nativeEvent.isComposing) return;
+            if (e.key === 'Escape') {
+              setOpen(false);
+              setActive(-1);
+              return;
+            }
+            if (
+              (e.key === 'ArrowDown' || e.key === 'ArrowUp') &&
+              query.trim()
+            ) {
+              e.preventDefault();
+              setOpen(true);
+              setActive(
+                matches.length === 0
+                  ? -1
+                  : e.key === 'ArrowDown'
+                    ? (expanded ? active + 1 : 0) % matches.length
+                    : (expanded && active >= 0
+                        ? active - 1 + matches.length
+                        : matches.length - 1) % matches.length,
+              );
+            } else if (e.key === 'Enter' && activeOption) {
+              e.preventDefault();
+              choose(activeOption);
+            }
           }}
-        >
-          <option value="">Choose a system</option>
-          {matches.map((system) => (
-            <option key={system.id} value={system.id}>
-              {system.name ?? 'Unnamed system'} — {system.id}
-            </option>
-          ))}
-        </select>
-      </label>
-      <small>
-        {!query.trim()
-          ? 'Enter a name or numeric system ID.'
-          : matches.length === 0
-            ? 'No matching systems in this snapshot.'
-            : 'Up to 20 matches. Refine your search, then select a system.'}
+        />
+        {expanded && (
+          <div className="navcom-suggestions">
+            <ul
+              ref={list}
+              id={listId}
+              role="listbox"
+              aria-label={`${label} matches`}
+            >
+              {matches.map((system, index) => (
+                <li
+                  id={optionId(system.id)}
+                  key={system.id}
+                  role="option"
+                  aria-selected={selected?.id === system.id}
+                  data-active={active === index ? 'true' : undefined}
+                  onPointerDown={(e) => e.preventDefault()}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onMouseMove={() => setActive(index)}
+                  onClick={() => choose(system)}
+                >
+                  {system.name ?? 'Unnamed system'} <span>— {system.id}</span>
+                </li>
+              ))}
+            </ul>
+            {matches.length === 0 && (
+              <p role="status">No matching systems in this snapshot.</p>
+            )}
+          </div>
+        )}
+      </div>
+      <small id={hintId}>
+        {selected
+          ? `Selected system ID ${selected.id}.`
+          : 'Type a name or ID, then choose a match. Up to 20 results.'}
       </small>
-    </fieldset>
+    </div>
   );
 }
 
