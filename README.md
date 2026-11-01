@@ -4,11 +4,11 @@ A modular Windows desktop operations platform for EVE Online.
 
 Developed by ECHELON APPLIED SYSTEMS.
 
-Development is in progress. NAVCOM is planned and not yet functional.
+Development is in progress. NAVCOM now provides static minimum-hop routing after explicit loading of privately provisioned, integrity-checked official SDE data. No dataset is bundled and no live ESI connection is implemented. See [NAVCOM usage, ESI assessment and player validation](docs/NAVCOM_M2D.md).
 
 ## M1-D portable Appearance review
 
-M1-B portable startup storage and M1-C's five neutral Graphite/accent themes are merged. This draft adds Rust-owned Appearance persistence in executable-adjacent `app-data/settings.json`, with strict v2 schema, byte-preserving v1 compatibility and atomic saves. Only theme ID is writable; workspaces still reset and NAVCOM remains planned/nonfunctional. See [Appearance persistence and validation limits](docs/APPEARANCE_PERSISTENCE.md).
+M1-B portable startup storage and M1-C's five neutral Graphite/accent themes are merged. This draft adds Rust-owned Appearance persistence in executable-adjacent `app-data/settings.json`, with strict v2 schema, byte-preserving v1 compatibility and atomic saves. Only theme ID is writable; workspaces still reset and NAVCOM static routing is documented separately in M2-D. See [Appearance persistence and validation limits](docs/APPEARANCE_PERSISTENCE.md).
 
 Desktop **Appearance** restores the saved choice and shows Loading/Saving/Saved or a clear not-saved error with explicit retry. Browser preview remains temporary and never invokes native storage. Existing v1 empty preferences are upgraded only on a successful explicit save; corrupt/future/unknown data is never reset. No theme editor, arbitrary filesystem IPC, EVE services, credentials or unrelated features are introduced.
 
@@ -114,6 +114,6 @@ Runtime dependencies are React/React DOM **19.3.1** and Tauri JS API **2.12.4**.
 
 ## Current limits
 
-No detached/multiple-window management, workspace restoration, monitor recovery, SQLite, general settings editing, EVE SSO/ESI, route calculations, intelligence feeds, AI, overlays or game interaction is implemented. The shell's current selection is in memory only. Appearance alone uses strict version-2 preferences; old version-1 empty preferences are preserved until the first explicit successful save. Other preferences need separately approved validation/migration design. Diagnostic/packaging hardening and recovery signoff remain later work. Windows manual runtime validation must be recorded separately using the smoke plan; do not infer it from frontend tests, Rust unit tests or an installer build.
+No detached/multiple-window management, workspace restoration, monitor recovery, SQLite, general settings editing, EVE SSO/ESI, live route intelligence, intelligence feeds, AI, overlays or game interaction is implemented. The shell's current selection is in memory only. Appearance alone uses strict version-2 preferences; old version-1 empty preferences are preserved until the first explicit successful save. Other preferences need separately approved validation/migration design. Diagnostic/packaging hardening and recovery signoff remain later work. Windows manual runtime validation must be recorded separately using the smoke plan; do not infer it from frontend tests, Rust unit tests or an installer build.
 
 Coordination and scope approval remain in [Issue #1](https://github.com/ECHELON-APPLIED-SYSTEMS/echelon-os/issues/1). Follow `AGENTS.md` and `docs/HANDOVER.md`; Product Owner approval is required for merging and release.

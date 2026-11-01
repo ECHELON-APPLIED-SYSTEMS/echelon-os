@@ -1,3 +1,4 @@
+import { Navcom } from './Navcom';
 import type { ComponentType } from 'react';
 import type { ModuleDefinition } from '../../core/modules';
 
@@ -5,7 +6,6 @@ export const navcomManifest = {
   id: 'navcom',
   name: 'NAVCOM',
   summary: 'Navigation and route planning for New Eden.',
-  availability: 'planned',
-  reason:
-    'Not yet implemented. Route planning and EVE connectivity are unavailable.',
+  availability: 'available',
+  entry: Navcom,
 } as const satisfies ModuleDefinition<ComponentType>;

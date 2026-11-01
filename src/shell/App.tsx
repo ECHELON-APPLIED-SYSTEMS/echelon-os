@@ -9,7 +9,7 @@ import { Icon } from './Icon';
 
 const modules = moduleRegistry.list();
 const availabilityLabels = {
-  available: 'Ready',
+  available: 'Available',
   planned: 'Planned',
   disabled: 'Unavailable',
 } as const;
@@ -94,7 +94,7 @@ export function App() {
             <h1>{selectedModule?.name ?? 'Workspace overview'}</h1>
             <p>
               {selectedModule
-                ? 'Module information and availability.'
+                ? 'Module workspace and data availability.'
                 : 'A foundation for your New Eden operations.'}
             </p>
           </div>
@@ -137,7 +137,7 @@ export function App() {
                         (module) => module.availability === 'available',
                       ).length
                     }{' '}
-                    operational
+                    available
                   </span>
                 </div>
                 <div className="module-grid">
@@ -175,8 +175,9 @@ export function App() {
               </section>
               <RuntimeStatus />
               <p className="scope-note">
-                No EVE connection is configured. Appearance and workspace
-                choices are not saved between launches.
+                No live EVE connection is configured. Static NAVCOM routing
+                requires privately provisioned data. Workspace choices reset
+                between launches; desktop Appearance is saved.
               </p>
             </>
           )}

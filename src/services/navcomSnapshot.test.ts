@@ -32,6 +32,8 @@ describe('explicit private NAVCOM load service', () => {
       graph: createStargateGraph([1, 2], [[1, 2]]),
       englishName: () => undefined,
       build: 42,
+      systemCount: 2,
+      searchSystems: () => Object.freeze([]),
     };
     vi.mocked(invoke).mockResolvedValue({
       kind: 'text',

@@ -1,7 +1,7 @@
 # Private portable NAVCOM snapshot boundary (M2-C)
 
-This milestone provides read-only plumbing, not a route-planning interface.
-NAVCOM remains **Planned**. Nothing imports this service from startup or the UI.
+M2-C provides the accepted read-only plumbing. [M2-D](NAVCOM_M2D.md) now
+invokes it from an explicit NAVCOM load action; no automatic startup load is added.
 Absence of a snapshot is normal and does not trigger file creation, download,
 conversion, a fallback directory, or app startup failure. No production game data
 is included in source, fixtures, CI, artifacts, or application packaging.
@@ -79,7 +79,7 @@ shortest-hop/avoid semantics; routes are not safety or real-time claims.
 
 5. Keep the complete portable folder together when moving/relaunching it,
    including app-data. No absolute path is saved in settings. A future explicitly
-   approved caller can request the load; M2-C deliberately adds no UI trigger.
+   approved caller can request the load; M2-D provides the explicit Load route data action.
 
 `missing` means the fixed child directory/file is absent, not that bad data was
 silently discarded. `unsafe-path`/`changed` require closing the app and preserving
