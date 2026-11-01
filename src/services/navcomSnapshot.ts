@@ -43,7 +43,7 @@ export type NavcomSnapshotResult =
         | 'unavailable';
     }>;
 
-/** Called explicitly only; no cache, polling, startup/UI import or caller pin. */
+/** Called explicitly only; no cache, polling, automatic startup load or caller pin. */
 export async function readNavcomSnapshot(): Promise<NavcomSnapshotResult> {
   if (!isTauri()) return { kind: 'preview' };
   let response: unknown;

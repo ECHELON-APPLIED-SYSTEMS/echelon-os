@@ -55,7 +55,7 @@ describe('live appearance', () => {
         screen.getByRole('heading', { level: 1, name: 'NAVCOM' }),
       ).toBeVisible();
       expect(
-        screen.getByText(/Route planning and EVE connectivity are unavailable/),
+        screen.getByRole('heading', { name: 'Stargate route planner' }),
       ).toBeVisible();
       expect(screen.getByRole('button', { name: /NAVCOM/ })).toHaveAttribute(
         'aria-current',

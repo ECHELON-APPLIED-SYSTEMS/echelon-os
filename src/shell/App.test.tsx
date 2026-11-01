@@ -2,29 +2,34 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { readAppMetadata } from '../services/appMetadata';
 import { App } from './App';
+import { readNavcomSnapshot } from '../services/navcomSnapshot';
 import { ModuleView } from './ModuleView';
 
+vi.mock('../services/navcomSnapshot', () => ({ readNavcomSnapshot: vi.fn() }));
 vi.mock('../services/appMetadata', () => ({ readAppMetadata: vi.fn() }));
 beforeEach(() => {
   vi.mocked(readAppMetadata).mockResolvedValue({ kind: 'preview' });
+  vi.mocked(readNavcomSnapshot).mockResolvedValue({ kind: 'preview' });
 });
 
 describe('application shell', () => {
-  it('shows an honest browser state and planned NAVCOM details', async () => {
+  it('opens NAVCOM without automatically reading private route data', async () => {
     render(<App />);
     expect(
       screen.getByRole('heading', { level: 1, name: 'Workspace overview' }),
     ).toBeVisible();
     expect(await screen.findByText(/Browser preview/)).toBeVisible();
-    expect(screen.getByText('Not yet implemented')).toBeVisible();
+    expect(screen.getByText('Ready to open')).toBeVisible();
     fireEvent.click(
       screen.getByRole('button', { name: /View module details/ }),
     );
     expect(
       screen.getByRole('heading', { level: 1, name: 'NAVCOM' }),
     ).toBeVisible();
+    expect(readNavcomSnapshot).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Load route data' }));
     expect(
-      screen.getByText(/Route planning and EVE connectivity are unavailable/),
+      await screen.findByText(/Browser preview cannot access private desktop/),
     ).toBeVisible();
     expect(screen.getByRole('button', { name: /NAVCOM/ })).toHaveAttribute(
       'aria-current',
@@ -56,9 +61,9 @@ describe('application shell', () => {
     expect(document.documentElement).toHaveAttribute('data-theme', 'caldari');
     expect(screen.getByText('Desktop connected')).toBeVisible();
     expect(screen.getAllByText('M1-B').length).toBeGreaterThanOrEqual(2);
-    expect(
-      screen.getByText(/Appearance and workspace choices/),
-    ).toHaveTextContent('not saved between launches');
+    expect(screen.getByText(/Workspace choices reset/)).toHaveTextContent(
+      'desktop Appearance is saved',
+    );
   });
 
   it('renders a pending state, then an accessible error and a working explicit retry', async () => {

@@ -105,5 +105,21 @@ export async function loadStargateSnapshot(
     // Do not expose a mutable Map, or the caller's mutable provenance object.
     englishName: (id: number): string | undefined => names.get(id),
     build: approvedBuild,
+    systemCount: ids.length,
+    /** Bounded read-only search over validated data. Never enumerate raw maps. */
+    searchSystems: (query: string) => {
+      const needle = query.trim().toLowerCase();
+      if (!needle || needle.length > 64) return Object.freeze([]);
+      return Object.freeze(
+        ids
+          .filter(
+            (id) =>
+              String(id).startsWith(needle) ||
+              names.get(id)?.toLowerCase().includes(needle),
+          )
+          .slice(0, 20)
+          .map((id) => Object.freeze({ id, name: names.get(id) })),
+      );
+    },
   });
 }

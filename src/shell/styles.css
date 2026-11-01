@@ -489,3 +489,73 @@ select:disabled {
   grid-column: 1 / -1;
   justify-self: start;
 }
+
+.navcom-panel {
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.navcom-panel p {
+  line-height: 1.6;
+}
+.navcom-endpoints {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin: 24px 0;
+}
+.navcom-endpoint {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  padding: 16px;
+}
+.navcom-endpoint label {
+  display: grid;
+  gap: 8px;
+  color: var(--secondary-text);
+}
+.navcom-endpoint input,
+.navcom-endpoint select {
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--control-border);
+  border-radius: 4px;
+  background: var(--control);
+  color: var(--text);
+  font: inherit;
+}
+.navcom-endpoint small,
+.navcom-provenance,
+.navcom-steps span {
+  color: var(--muted);
+}
+.navcom-route {
+  margin-top: 24px;
+}
+.navcom-steps {
+  max-height: 420px;
+  overflow: auto;
+  padding-left: 32px;
+}
+.navcom-steps li {
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.navcom-steps span {
+  margin-left: 10px;
+  font-size: 0.8rem;
+}
+@media (max-width: 760px) {
+  .navcom-endpoints {
+    grid-template-columns: 1fr;
+  }
+}
+
+.navcom-endpoint input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}

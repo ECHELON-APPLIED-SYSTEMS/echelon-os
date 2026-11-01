@@ -54,6 +54,27 @@ describe('explicit offline snapshot adapter', () => {
     expect(result.englishName(1)).toBe('Fiction Alpha');
     expect(result.englishName(2)).toBeUndefined();
   });
+  it('searches validated names and IDs with immutable bounded results', async () => {
+    const systems = Array.from({ length: 25 }, (_, i) => [
+      i + 1,
+      i === 24 ? null : 'Fiction Duplicate',
+    ]);
+    const { text, pin } = fixture({ version: 1, systems, edges: [] });
+    const result = await loadStargateSnapshot(
+      text,
+      { ...pin, systems: 25, gates: 0, edges: 0, isolatedSystems: 25 },
+      42,
+    );
+    expect(result.systemCount).toBe(25);
+    const matches = result.searchSystems('duplicate');
+    expect(matches).toHaveLength(20);
+    expect(Object.isFrozen(matches)).toBe(true);
+    expect(Object.isFrozen(matches[0])).toBe(true);
+    expect(result.searchSystems('25')).toEqual([{ id: 25, name: undefined }]);
+    expect(result.searchSystems('')).toEqual([]);
+    expect(result.searchSystems('x'.repeat(65))).toEqual([]);
+    expect(result.searchSystems(' Fiction DuPlicate ')[0]?.id).toBe(1);
+  });
   it('rejects missing, oversized, tampered and stale data', async () => {
     const { text, pin } = fixture();
     for (const input of [undefined, '', text + ' ', 'x'.repeat(4194305)]) {

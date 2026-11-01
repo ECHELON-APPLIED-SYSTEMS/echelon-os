@@ -1,6 +1,6 @@
 # ECHELON OS — repository instructions for Codex and other coding agents
 
-ECHELON OS is a modular Windows desktop operations platform for EVE Online. The planned stack is **Tauri 2, React, TypeScript, Rust and SQLite**. Keep a professional graphite/dark UI with restrained highlights, minimal background load, independent native windows and saved workspaces. **NAVCOM** is the first planned module. Future ESI and optional AI integrations must not be represented as functional before they are implemented and verified.
+ECHELON OS is a modular Windows desktop operations platform for EVE Online. The planned stack is **Tauri 2, React, TypeScript, Rust and SQLite**. Keep a professional graphite/dark UI with restrained highlights, minimal background load, independent native windows and saved workspaces. **NAVCOM** exposes static minimum-hop routing only after explicit validation of a privately provisioned official SDE snapshot; live ESI remains unimplemented. Future ESI and optional AI integrations must not be represented as functional before they are implemented and verified.
 
 ## Shared agent handover protocol — mandatory on `Handover`
 
@@ -31,7 +31,7 @@ If GitHub issue/comments cannot be read, report this as a connectivity blocker, 
 
 ## Public review safeguards
 
-Developed by ECHELON APPLIED SYSTEMS. The repository is public and GitHub Actions are enabled by Product Owner approval. Automatic frontend checks and explicitly requested Windows builds follow the workflow documented in README.md. Do not change visibility, enable CI, merge, publish, release, deploy or spend without explicit Product Owner approval. NAVCOM is planned and nonfunctional. Multiple windows, saved workspaces, SQLite and optional AI remain future work.
+Developed by ECHELON APPLIED SYSTEMS. The repository is public and GitHub Actions are enabled by Product Owner approval. Automatic frontend checks and explicitly requested Windows builds follow the workflow documented in README.md. Do not change visibility, enable CI, merge, publish, release, deploy or spend without explicit Product Owner approval. NAVCOM static routing requires the privately provisioned pinned snapshot; do not claim live ESI, character location or safety intelligence. Multiple windows, saved workspaces, SQLite and optional AI remain future work.
 
 Check all holds and superseding instructions before selecting a task. A matching blocked response may be retried only on an explicit active user retry. After posting a handover, independently fetch it and verify its content and author. Stop after reporting; do not automatically begin another milestone.
 
