@@ -56,6 +56,36 @@ fn same(a: &Metadata, b: &Metadata) -> bool {
         a.len() == b.len() && a.modified().ok() == b.modified().ok()
     }
 }
+// Diagnostics exist only in unit-test binaries; no paths or data are accepted.
+#[cfg(test)]
+thread_local! {
+    static FIRST_CHANGED_STAGE: std::cell::Cell<Option<&'static str>> = const { std::cell::Cell::new(None) };
+}
+#[cfg(test)]
+fn changed_diagnostic(
+    stage: &'static str,
+    ancestor_index: Option<usize>,
+    before: &Metadata,
+    after: Option<&Metadata>,
+    read_bytes: Option<usize>,
+) {
+    FIRST_CHANGED_STAGE.with(|first| {
+        if first.get().is_none() {
+            first.set(Some(stage));
+        }
+    });
+    eprintln!(
+        "NAVCOM_READ_CHANGED stage={stage} ancestor_index={ancestor_index:?} metadata_present={} link={:?} directory={:?} regular_file={:?} size_equal={:?} mtime_equal={:?} identity_equal={:?} read_size_equal={:?}",
+        after.is_some(),
+        after.map(link),
+        after.map(Metadata::is_dir),
+        after.map(Metadata::is_file),
+        after.map(|m| before.len() == m.len()),
+        after.map(|m| before.modified().ok() == m.modified().ok()),
+        after.map(|m| same(before, m)),
+        after.zip(read_bytes).map(|(m, bytes)| m.len() == bytes as u64),
+    );
+}
 fn metadata(path: &Path) -> Result<Option<Metadata>, SnapshotError> {
     match fs::symlink_metadata(path) {
         Ok(m) => Ok(Some(m)),
@@ -109,10 +139,16 @@ fn read_with_hook(
             return Err(SnapshotError::UnsafePath);
         }
         let handle = open(path, true)?;
-        if !same(
-            &m,
-            &handle.metadata().map_err(|_| SnapshotError::Unreadable)?,
-        ) {
+        let opened_directory = handle.metadata().map_err(|_| SnapshotError::Unreadable)?;
+        if !same(&m, &opened_directory) {
+            #[cfg(test)]
+            changed_diagnostic(
+                "ancestor-pre-open",
+                Some(guards.len()),
+                &m,
+                Some(&opened_directory),
+                None,
+            );
             return Err(SnapshotError::Changed);
         }
         guards.push((path.to_path_buf(), m, handle));
@@ -125,7 +161,16 @@ fn read_with_hook(
         return Err(SnapshotError::UnsafePath);
     }
     let dh = open(&directory, true)?;
-    if !same(&dm, &dh.metadata().map_err(|_| SnapshotError::Unreadable)?) {
+    let opened_directory = dh.metadata().map_err(|_| SnapshotError::Unreadable)?;
+    if !same(&dm, &opened_directory) {
+        #[cfg(test)]
+        changed_diagnostic(
+            "navcom-pre-open",
+            Some(guards.len()),
+            &dm,
+            Some(&opened_directory),
+            None,
+        );
         return Err(SnapshotError::Changed);
     }
     guards.push((directory.clone(), dm, dh));
@@ -143,6 +188,8 @@ fn read_with_hook(
     let file = open(&path, false)?;
     let opened = file.metadata().map_err(|_| SnapshotError::Unreadable)?;
     if !same(&before, &opened) {
+        #[cfg(test)]
+        changed_diagnostic("snapshot-pre-open", None, &before, Some(&opened), None);
         return Err(SnapshotError::Changed);
     }
     if opened.len() > MAX_BYTES {
@@ -156,17 +203,55 @@ fn read_with_hook(
     if bytes.len() as u64 > MAX_BYTES {
         return Err(SnapshotError::Oversize);
     }
-    let after = metadata(&path)?.ok_or(SnapshotError::Changed)?;
+    let after = metadata(&path)?;
+    #[cfg(test)]
+    if after.is_none() {
+        changed_diagnostic(
+            "snapshot-post-read-missing",
+            None,
+            &opened,
+            None,
+            Some(bytes.len()),
+        );
+    }
+    let after = after.ok_or(SnapshotError::Changed)?;
     if link(&after)
         || !same(&opened, &after)
         || after.len() != bytes.len() as u64
         || opened.modified().ok() != after.modified().ok()
     {
+        #[cfg(test)]
+        changed_diagnostic(
+            "snapshot-post-read",
+            None,
+            &opened,
+            Some(&after),
+            Some(bytes.len()),
+        );
         return Err(SnapshotError::Changed);
     }
     for (path, prior, _handle) in &guards {
-        let now = metadata(path)?.ok_or(SnapshotError::Changed)?;
+        let now = metadata(path)?;
+        #[cfg(test)]
+        if now.is_none() {
+            changed_diagnostic(
+                "ancestor-post-read-missing",
+                guards.iter().position(|g| &g.0 == path),
+                prior,
+                None,
+                None,
+            );
+        }
+        let now = now.ok_or(SnapshotError::Changed)?;
         if link(&now) || !now.is_dir() || !same(prior, &now) {
+            #[cfg(test)]
+            changed_diagnostic(
+                "ancestor-post-read",
+                guards.iter().position(|g| &g.0 == path),
+                prior,
+                Some(&now),
+                None,
+            );
             return Err(SnapshotError::Changed);
         }
     }
@@ -285,12 +370,17 @@ mod tests {
         let moved = target.0.join("moved");
         fs::rename(&f.0, &moved).unwrap();
         let store = PortableStore::open(&moved.join("fiction.exe")).unwrap();
+        FIRST_CHANGED_STAGE.with(|first| first.set(None));
+        let result = read(&store);
         assert_eq!(
-            read(&store),
+            result,
             SnapshotRead::Text {
                 text: "fiction".into()
-            }
+            },
+            "relocated read first_changed_stage={:?}",
+            FIRST_CHANGED_STAGE.with(|first| first.get()),
         );
+        assert_eq!(FIRST_CHANGED_STAGE.with(|first| first.get()), None);
     }
     #[cfg(unix)]
     #[test]
@@ -319,11 +409,18 @@ mod tests {
         );
         fs::remove_file(&path).unwrap();
         fs::write(&path, b"original").unwrap();
-        assert!(read_with_hook(store.root(), || {
-            fs::rename(&path, dir.join("prior")).unwrap();
-            fs::write(&path, b"swapped").unwrap();
-        })
-        .is_err());
+        FIRST_CHANGED_STAGE.with(|first| first.set(None));
+        assert_eq!(
+            read_with_hook(store.root(), || {
+                fs::rename(&path, dir.join("prior")).unwrap();
+                fs::write(&path, b"swapped").unwrap();
+            }),
+            Err(SnapshotError::Changed)
+        );
+        assert_eq!(
+            FIRST_CHANGED_STAGE.with(|first| first.get()),
+            Some("snapshot-pre-open")
+        );
         fs::remove_file(&path).unwrap();
         // Avoid spawning a child process while parallel tests hold OS storage locks.
         // The test-only POSIX call creates a FIFO; the production reader never does.
