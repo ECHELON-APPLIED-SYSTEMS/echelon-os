@@ -12,6 +12,10 @@ The feature branch stages the desktop foundation: a graphite shell, static typed
 
 The repository is public and GitHub Actions are enabled. The first controlled [Windows CI run](https://github.com/ECHELON-APPLIED-SYSTEMS/echelon-os/actions/runs/41255882419) passed frontend checks, Rust checks/tests, and unsigned EXE/NSIS builds. This is an unmerged draft for independent review, not acceptance or release. Native launch and Desktop connected status were reported by the Product Owner; full keyboard/accessibility/scaling and runtime smoke validation remain outstanding. Standalone distribution is the primary direction; full portability is not implemented or validated, and NSIS is secondary evidence.
 
+## M1-C-UI theme review
+
+The frontend-only theme branch adds ECHELON Graphite plus four distinct dark empire palettes through **Appearance**. Selection updates immediately and resets on a fresh load; there is no theme persistence yet. See [theme architecture, accessibility checks and limits](docs/THEMES.md). This work is independent of draft M1-B storage; no native milestone, build or merge is implied.
+
 ## Windows prerequisites
 
 - Windows 11 x64 with Microsoft Edge WebView2 Evergreen Runtime (normally included with Windows 11).

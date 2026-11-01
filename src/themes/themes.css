@@ -1,0 +1,102 @@
+/* Palettes only: component structure and all state styling are shared. */
+:root,
+:root[data-theme='echelon'] {
+  --canvas: #13161a;
+  --sidebar: #181c21;
+  --surface: #1b1f25;
+  --panel: #1d2529;
+  --text: #e4e8eb;
+  --muted: #a7b2bb;
+  --secondary-text: #c2cbd3;
+  --accent: #83c8bf;
+  --accent-text: #b5e3dc;
+  --accent-wash: #223231;
+  --hover: #23292f;
+  --line: #38434a;
+  --control: #252d34;
+  --control-hover: #303c44;
+  --control-border: #829097;
+  --focus: #a1e4d8;
+  --error: #ffb8b2;
+  --on-accent: #131b1a;
+}
+:root[data-theme='amarr'] {
+  --canvas: #181510;
+  --sidebar: #201c16;
+  --surface: #252019;
+  --panel: #2b251c;
+  --text: #f0e8d9;
+  --muted: #bdb1a0;
+  --secondary-text: #dacdb7;
+  --accent: #d5b16a;
+  --accent-text: #f0d49c;
+  --accent-wash: #38301f;
+  --hover: #30291e;
+  --line: #4a4030;
+  --control: #322b20;
+  --control-hover: #403622;
+  --control-border: #a49373;
+  --focus: #f2d394;
+  --error: #ffb9ab;
+  --on-accent: #20190d;
+}
+:root[data-theme='caldari'] {
+  --canvas: #101820;
+  --sidebar: #15212b;
+  --surface: #192732;
+  --panel: #1b2c39;
+  --text: #e1edf5;
+  --muted: #a6bac9;
+  --secondary-text: #bdd0df;
+  --accent: #78acd7;
+  --accent-text: #b8daf4;
+  --accent-wash: #20394c;
+  --hover: #243441;
+  --line: #354c5f;
+  --control: #223341;
+  --control-hover: #2b4051;
+  --control-border: #839eaf;
+  --focus: #9bdce8;
+  --error: #ffb6b2;
+  --on-accent: #101d29;
+}
+:root[data-theme='gallente'] {
+  --canvas: #111b18;
+  --sidebar: #16251f;
+  --surface: #1a2b24;
+  --panel: #1d3028;
+  --text: #e1efe7;
+  --muted: #a7bdb0;
+  --secondary-text: #bdd7c8;
+  --accent: #63cb92;
+  --accent-text: #a8e7c3;
+  --accent-wash: #203d2e;
+  --hover: #25392e;
+  --line: #355345;
+  --control: #24392d;
+  --control-hover: #2b4536;
+  --control-border: #88a591;
+  --focus: #99e6b9;
+  --error: #ffbab5;
+  --on-accent: #10251a;
+}
+:root[data-theme='minmatar'] {
+  --canvas: #1b1513;
+  --sidebar: #251c18;
+  --surface: #2c211c;
+  --panel: #32251e;
+  --text: #f0e5de;
+  --muted: #c4afa3;
+  --secondary-text: #dec5b5;
+  --accent: #d78a59;
+  --accent-text: #f3c49c;
+  --accent-wash: #412d20;
+  --hover: #38291f;
+  --line: #574133;
+  --control: #382a22;
+  --control-hover: #493325;
+  --control-border: #ae9381;
+  --focus: #f4bf7b;
+  --error: #ffbab5;
+  --on-accent: #27170e;
+}
