@@ -8,9 +8,13 @@ Development is in progress. NAVCOM is planned and not yet functional.
 
 ## M1-B portable foundation review
 
-M1-A is merged. M1-B adds a Rust-owned, versioned non-sensitive startup settings store and a portable Windows ZIP packaging path. NAVCOM remains planned/nonfunctional, and no EVE services or themes are implemented. See [portable operation and recovery](docs/PORTABLE.md).
+M1-A and the M1-C theme UI are merged on main. This M1-B draft integrates both foundations and adds a Rust-owned, versioned non-sensitive startup settings store and a portable Windows ZIP packaging path. NAVCOM remains planned/nonfunctional. Five approved accent themes are available in memory only; no EVE services or theme persistence are implemented. See [portable operation and recovery](docs/PORTABLE.md).
 
-The repository is public with automatic lightweight frontend CI and explicitly requested full Windows validation. Historical [M1-A Windows CI](https://github.com/ECHELON-APPLIED-SYSTEMS/echelon-os/actions/runs/41255882419) passed its native checks/build; the owner reported standalone launch, metadata IPC, keyboard and window behavior. **M1-B native build, ZIP and storage smoke tests are pending separate approval**. Prior evidence does not validate the new storage behavior or establish full portability/release acceptance.
+The repository is public with automatic lightweight frontend and native-independent storage/packaging checks. The earlier [M1-B Windows run](https://github.com/ECHELON-APPLIED-SYSTEMS/echelon-os/actions/runs/41297744749) passed on the pre-theme base (15 Rust tests, 28 frontend tests and portable ZIP). The Product Owner reported basic extracted launch/relaunch and portable-data smoke as “All good”; advanced checks were not individually documented. **The combined portable-plus-theme tree has not had a native Windows build or smoke test.** Historical results do not validate this combined tree or establish full release acceptance. No additional native build is authorised by this source integration.
+
+## Integrated Appearance UI
+
+The accepted M1-C theme UI provides five accent choices over common neutral Graphite surfaces (#191919 canvas, #202020 sidebar, #242424 cards/panels) through **Appearance**. It is now present alongside M1-B portable startup storage and M1-B build-stage metadata. Selection updates immediately but resets on a fresh load: the existing immutable version-1 `settings.json` has empty preferences and no theme write API. Appearance and workspace choices are not persisted. See [theme architecture and limits](docs/THEMES.md).
 
 ## Windows prerequisites
 

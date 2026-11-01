@@ -1,0 +1,53 @@
+/* One neutral Graphite foundation. Only the four highlight tokens vary by theme. */
+:root {
+  --canvas: #191919;
+  --sidebar: #202020;
+  --surface: #242424;
+  --panel: #242424;
+  --text: #e8e8e8;
+  --muted: #b4b4b4;
+  --secondary-text: #d0d0d0;
+  --hover: #2b2b2b;
+  --line: #4a4a4a;
+  --control: #2a2a2a;
+  --control-hover: #333333;
+  --control-border: #919191;
+  --error: #ffb8b2;
+  --status: #b8d8c2;
+  --on-accent: #191919;
+  /* ECHELON fallback before mount or for an unknown document attribute. */
+  --accent: #83c8bf;
+  --accent-text: #b5e3dc;
+  --accent-wash: #252e2c;
+  --focus: #a1e4d8;
+}
+:root[data-theme='echelon'] {
+  --accent: #83c8bf;
+  --accent-text: #b5e3dc;
+  --accent-wash: #252e2c;
+  --focus: #a1e4d8;
+}
+:root[data-theme='amarr'] {
+  --accent: #d5b16a;
+  --accent-text: #f0d49c;
+  --accent-wash: #302b23;
+  --focus: #f2d394;
+}
+:root[data-theme='caldari'] {
+  --accent: #78acd7;
+  --accent-text: #b8daf4;
+  --accent-wash: #252d33;
+  --focus: #9bdce8;
+}
+:root[data-theme='gallente'] {
+  --accent: #63cb92;
+  --accent-text: #a8e7c3;
+  --accent-wash: #252f29;
+  --focus: #99e6b9;
+}
+:root[data-theme='minmatar'] {
+  --accent: #d78a59;
+  --accent-text: #f3c49c;
+  --accent-wash: #302923;
+  --focus: #f4bf7b;
+}
