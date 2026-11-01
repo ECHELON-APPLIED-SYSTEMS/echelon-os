@@ -517,8 +517,7 @@ select:disabled {
   gap: 8px;
   color: var(--secondary-text);
 }
-.navcom-endpoint input,
-.navcom-endpoint select {
+.navcom-endpoint input {
   width: 100%;
   min-width: 0;
   padding: 10px;
@@ -558,4 +557,47 @@ select:disabled {
 .navcom-endpoint input:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
+}
+
+.navcom-combobox {
+  position: relative;
+  min-width: 0;
+}
+.navcom-suggestions {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  border: 1px solid var(--control-border);
+  border-radius: 4px;
+  background: var(--control);
+  box-shadow: 0 8px 20px var(--canvas);
+}
+.navcom-suggestions ul {
+  list-style: none;
+  padding: 4px;
+  margin: 0;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.navcom-suggestions li {
+  padding: 10px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.navcom-suggestions li[data-active='true'] {
+  background: var(--control-hover);
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+.navcom-suggestions li[aria-selected='true'] {
+  color: var(--accent);
+}
+.navcom-suggestions li span {
+  color: var(--muted);
+}
+.navcom-suggestions p {
+  margin: 0;
+  padding: 12px;
 }
