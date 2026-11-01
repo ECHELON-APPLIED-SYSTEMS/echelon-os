@@ -4,3 +4,6 @@ pub mod portable;
 
 #[path = "../../../src-tauri/src/services/navcom.rs"]
 pub mod navcom;
+
+#[path = "../../../src-tauri/src/services/eve/mod.rs"]
+pub mod eve;

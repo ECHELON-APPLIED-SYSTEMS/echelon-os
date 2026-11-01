@@ -4,7 +4,7 @@ A modular Windows desktop operations platform for EVE Online.
 
 Developed by ECHELON APPLIED SYSTEMS.
 
-Development is in progress. NAVCOM now provides static minimum-hop routing after explicit loading of privately provisioned, integrity-checked official SDE data. No dataset is bundled and no live ESI connection is implemented. See [NAVCOM usage, ESI assessment and player validation](docs/NAVCOM_M2D.md).
+Development is in progress. NAVCOM now provides static minimum-hop routing after explicit loading of privately provisioned, integrity-checked official SDE data. No dataset is bundled. The M2-F draft adds session-only EVE SSO, explicit cached character location and confirmed destination/waypoint requests; Windows/native and real-character validation are pending. See [session boundary and validation limits](docs/EVE_SESSION.md). See [NAVCOM usage, ESI assessment and player validation](docs/NAVCOM_M2D.md).
 
 ## M1-D portable Appearance review
 
@@ -91,10 +91,10 @@ Linux frontend checks work with Node 24. Native Linux Tauri compilation addition
 | ----------------------------- | ---------------------------------------------------------------------------- |
 | `src/shell/`                  | Application layout, accessible navigation, module hosting and runtime states |
 | `src/core/modules.ts`         | Framework-independent generic manifest and immutable registry                |
-| `src/modules/`                | Trusted module declarations; NAVCOM has no executable entry                  |
+| `src/modules/`                | Trusted module declarations and the NAVCOM interface                         |
 | `src/services/appMetadata.ts` | Typed IPC boundary and runtime validation of unknown responses               |
-| `src-tauri/src/commands.rs`   | Single exposed read-only command                                             |
-| `src-tauri/src/services/`     | Build metadata, independent of window/UI logic                               |
+| `src-tauri/src/commands.rs`   | Typed local-main metadata, Appearance, NAVCOM and EVE commands               |
+| `src-tauri/src/services/`     | Native metadata, portable storage, snapshot and EVE boundaries               |
 | `src-tauri/capabilities/`     | Explicit local main-window permission                                        |
 | `docs/SMOKE_TEST.md`          | Reproducible Windows runtime and installer checks                            |
 | `docs/HANDOVER.md`            | Append-only agent coordination protocol                                      |
@@ -114,6 +114,6 @@ Runtime dependencies are React/React DOM **19.3.1** and Tauri JS API **2.12.4**.
 
 ## Current limits
 
-No detached/multiple-window management, workspace restoration, monitor recovery, SQLite, general settings editing, EVE SSO/ESI, live route intelligence, intelligence feeds, AI, overlays or game interaction is implemented. The shell's current selection is in memory only. Appearance alone uses strict version-2 preferences; old version-1 empty preferences are preserved until the first explicit successful save. Other preferences need separately approved validation/migration design. Diagnostic/packaging hardening and recovery signoff remain later work. Windows manual runtime validation must be recorded separately using the smoke plan; do not infer it from frontend tests, Rust unit tests or an installer build.
+No detached/multiple-window management, workspace restoration, monitor recovery, SQLite, general settings editing, live route intelligence, intelligence feeds, AI or overlays is implemented. EVE destination requests are limited to the separately confirmed M2-F actions. The shell's current selection is in memory only. Appearance alone uses strict version-2 preferences; old version-1 empty preferences are preserved until the first explicit successful save. Other preferences need separately approved validation/migration design. Diagnostic/packaging hardening and recovery signoff remain later work. Windows manual runtime validation must be recorded separately using the smoke plan; do not infer it from frontend tests, Rust unit tests or an installer build.
 
 Coordination and scope approval remain in [Issue #1](https://github.com/ECHELON-APPLIED-SYSTEMS/echelon-os/issues/1). Follow `AGENTS.md` and `docs/HANDOVER.md`; Product Owner approval is required for merging and release.

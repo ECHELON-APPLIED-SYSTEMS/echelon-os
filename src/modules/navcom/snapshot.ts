@@ -100,8 +100,10 @@ export async function loadStargateSnapshot(
   }
   const graph = createStargateGraph(ids, data.edges);
   check(ids.length - connected.size === pin.isolatedSystems);
+  const systems = new Set(ids);
   return Object.freeze({
     graph,
+    hasSystem: (id: number): boolean => systems.has(id),
     // Do not expose a mutable Map, or the caller's mutable provenance object.
     englishName: (id: number): string | undefined => names.get(id),
     build: approvedBuild,

@@ -11,6 +11,12 @@ fn main() {
                 "get_theme",
                 "set_theme",
                 "get_navcom_snapshot",
+                "eve_status",
+                "eve_connect",
+                "eve_disconnect",
+                "eve_refresh_location",
+                "eve_prepare_waypoint",
+                "eve_send_waypoint",
             ])),
     )
     .expect("failed to build ECHELON OS application resources");

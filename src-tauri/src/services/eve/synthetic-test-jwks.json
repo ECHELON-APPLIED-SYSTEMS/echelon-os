@@ -1,0 +1,12 @@
+{
+  "keys": [
+    {
+      "kid": "synthetic-unit-test",
+      "kty": "RSA",
+      "alg": "RS256",
+      "use": "sig",
+      "n": "vIr32EYlyOBG-F37Vz_rRYIGgptZnMv28pp4xMdsDu64qHKNbtWfMnATNHkWmvTaaeKZOWvAPL3zvb7ESe3NAmvKLrrVQwhQ_nm6UYHtPi7B9iIiO1LnigoAbEb3lBWsLKAnFgEy-xVShyDdLDwfrsBltd0VGGvxwukz0hyLJKzKgQxj7-Z6XZcDG3w4499Y6U3LOqYW8EUi2EK8aBSuJT2yWt4pZYUkcPF6nC6rPClP9xhNseWaiKg6sPNe8piBzPlUi5m8xBXqGXzzcGLCXM0UvHg33qw_9I9Lrl_5crX9bRAmVf-pdeEBZDsKVzUMAxzRQx2cj_kQW0RoudY1Zw",
+      "e": "AQAB"
+    }
+  ]
+}

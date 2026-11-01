@@ -55,11 +55,21 @@ fn startup_error(message: &str) {
 }
 
 fn configure<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R> {
-    builder.invoke_handler(tauri::generate_handler![
+    #[cfg(test)]
+    let eve = services::eve::Eve::offline_for_acl_tests();
+    #[cfg(not(test))]
+    let eve = services::eve::Eve::default();
+    builder.manage(eve).invoke_handler(tauri::generate_handler![
         commands::get_app_metadata,
         commands::get_theme,
         commands::set_theme,
-        commands::get_navcom_snapshot
+        commands::get_navcom_snapshot,
+        commands::eve_status,
+        commands::eve_connect,
+        commands::eve_disconnect,
+        commands::eve_refresh_location,
+        commands::eve_prepare_waypoint,
+        commands::eve_send_waypoint
     ])
 }
 
@@ -193,6 +203,49 @@ mod tests {
             );
         }
         std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn eve_ipc_is_main_local_only_and_status_has_no_credentials() {
+        let app = configure(mock_builder())
+            .build(tauri::generate_context!())
+            .unwrap();
+        let main = WebviewWindowBuilder::new(&app, "main", Default::default())
+            .build()
+            .unwrap();
+        let other = WebviewWindowBuilder::new(&app, "other", Default::default())
+            .build()
+            .unwrap();
+        let local = "http://tauri.localhost";
+        let view = get_ipc_response(&main, request("eve_status", local))
+            .unwrap()
+            .deserialize::<serde_json::Value>()
+            .unwrap();
+        assert_eq!(
+            view,
+            serde_json::json!({"phase":"disconnected","character":null,
+            "location":null,"error":null,"retry_at":null,"expires_at":null})
+        );
+        assert!(get_ipc_response(&main, request("eve_disconnect", local)).is_ok());
+        for command in [
+            "eve_status",
+            "eve_connect",
+            "eve_disconnect",
+            "eve_refresh_location",
+            "eve_prepare_waypoint",
+            "eve_send_waypoint",
+        ] {
+            for (window, origin) in [(&other, local), (&main, "https://example.com")] {
+                let mut r = request(command, origin);
+                r.body = InvokeBody::Json(
+                    serde_json::json!({"destination":7,"action":"set-destination", "confirmationId":"test"}),
+                );
+                let error = get_ipc_response(window, r)
+                    .err()
+                    .expect("ACL must reject before dispatch");
+                assert!(error.to_string().contains("not allowed"));
+            }
+        }
     }
 
     #[test]
