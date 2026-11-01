@@ -56,6 +56,9 @@ def convert(archive, build, expected_sha256):
         seen = set()
         for info in infos:
             name = info.filename
+            # zipfile may sanitize separators (Windows) or truncate at NUL on read.
+            # Reject changed originals before validating the normalized POSIX path.
+            require(info.orig_filename == name, 'normalized member name')
             path = PurePosixPath(name)
             mode = info.external_attr >> 16
             require(name and not path.is_absolute() and '..' not in path.parts

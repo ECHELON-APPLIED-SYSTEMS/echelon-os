@@ -35,6 +35,30 @@ class ConverterTests(unittest.TestCase):
         p = self.archive(**kw)
         return convert(p, 42, hashlib.sha256(p.read_bytes()).hexdigest())
 
+    def literal_member(self, name):
+        # Patch a disposable ASCII name, bypassing zipfile's writer normalization.
+        # Same lengths preserve offsets, sizes and CRCs (only names change).
+        encoded = name.encode('ascii')
+        self.assertEqual(len(encoded), 3)
+        p = self.archive(extra=('a_b', 'x'))
+        with zipfile.ZipFile(p) as z:
+            header = z.getinfo('a_b').header_offset
+        raw = p.read_bytes()
+        self.assertEqual(raw.count(b'a_b'), 2)
+        local_name = header + 30
+        central_name = raw.index(b'a_b', local_name + 3)
+        self.assertEqual(raw[header:header + 4], b'PK\x03\x04')
+        self.assertEqual(int.from_bytes(raw[header + 26:header + 28], 'little'), 3)
+        self.assertEqual(raw[central_name - 46:central_name - 42], b'PK\x01\x02')
+        self.assertEqual(int.from_bytes(raw[central_name - 18:central_name - 16], 'little'), 3)
+        patched = raw.replace(b'a_b', encoded)
+        self.assertEqual(patched[local_name:local_name + 3], encoded)
+        self.assertEqual(patched[central_name:central_name + 3], encoded)
+        p.write_bytes(patched)
+        with zipfile.ZipFile(p) as z:
+            self.assertEqual(z.infolist()[-1].orig_filename, name)
+        return p
+
     def test_determinism_and_isolated(self):
         a, meta = self.run_convert()
         self.systems.reverse()
@@ -55,13 +79,34 @@ class ConverterTests(unittest.TestCase):
 
     def test_unsafe_members(self):
         for name in ('../escape', '/absolute', 'C:drive', 'a\\b', 'a/../b'):
-            with self.subTest(name=name), self.assertRaises(ValueError):
-                self.run_convert(extra=(name, 'x'))
+            with self.subTest(name=name):
+                p = self.literal_member(name) if '\\' in name else self.archive(extra=(name, 'x'))
+                with zipfile.ZipFile(p) as z:
+                    self.assertEqual(z.infolist()[-1].orig_filename, name)
+                with self.assertRaises(ValueError):
+                    convert(p, 42, hashlib.sha256(p.read_bytes()).hexdigest())
         info = zipfile.ZipInfo('link')
         info.create_system = 3
         info.external_attr = (stat.S_IFLNK | 0o777) << 16
         with self.assertRaises(ValueError):
             self.run_convert(extra=(info, 'target'))
+
+    def test_literal_name_normalization_is_rejected(self):
+        for original, normalized in [('a\\b', 'a/b'), ('a\x00b', 'a')]:
+            with self.subTest(original=original):
+                p = self.literal_member(original)
+                sha = hashlib.sha256(p.read_bytes()).hexdigest()
+                # Inspect original bytes before expecting rejection on the host.
+                with self.assertRaises(ValueError):
+                    convert(p, 42, sha)
+                # Exercise CPython's Windows separator path; not native Windows execution.
+                with patch.object(zipfile.os, 'sep', '\\'), patch.object(zipfile.os, 'altsep', '/'):
+                    with zipfile.ZipFile(p) as z:
+                        info = z.infolist()[-1]
+                        self.assertEqual(info.orig_filename, original)
+                        self.assertEqual(info.filename, normalized)
+                    with self.assertRaisesRegex(ValueError, 'normalized member name'):
+                        convert(p, 42, sha)
 
     def test_inflated(self):
         with self.assertRaises(ValueError):
