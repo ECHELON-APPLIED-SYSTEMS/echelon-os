@@ -58,7 +58,8 @@ fn configure<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R>
     builder.invoke_handler(tauri::generate_handler![
         commands::get_app_metadata,
         commands::get_theme,
-        commands::set_theme
+        commands::set_theme,
+        commands::get_navcom_snapshot
     ])
 }
 
@@ -135,6 +136,33 @@ mod tests {
                 .build()
                 .unwrap();
             let local = "http://tauri.localhost";
+            assert_eq!(
+                get_ipc_response(&main, request("get_navcom_snapshot", local))
+                    .unwrap()
+                    .deserialize::<serde_json::Value>()
+                    .unwrap(),
+                serde_json::json!({"kind":"absent"})
+            );
+            for (window, origin) in [(&other, local), (&main, "https://example.com")] {
+                assert!(get_ipc_response(window, request("get_navcom_snapshot", origin)).is_err());
+            }
+            {
+                use tauri::Manager;
+                let store = app.state::<PortableStore>();
+                std::fs::create_dir(store.root().join("navcom")).unwrap();
+                std::fs::write(
+                    store.root().join("navcom/snapshot.json"),
+                    b"fictional snapshot",
+                )
+                .unwrap();
+                assert_eq!(
+                    get_ipc_response(&main, request("get_navcom_snapshot", local))
+                        .unwrap()
+                        .deserialize::<serde_json::Value>()
+                        .unwrap(),
+                    serde_json::json!({"kind":"text","text":"fictional snapshot"})
+                );
+            }
             let mut write = request("set_theme", local);
             write.body = InvokeBody::Json(serde_json::json!({"theme": "amarr"}));
             assert!(get_ipc_response(&main, write).is_ok());

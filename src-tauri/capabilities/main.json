@@ -1,8 +1,15 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main-metadata",
-  "description": "The local main window may read build metadata and read or save an allowlisted portable Appearance selection only.",
+  "description": "The local main window may read metadata, allowlisted Appearance, and the fixed private NAVCOM snapshot only.",
   "local": true,
-  "windows": ["main"],
-  "permissions": ["allow-get-app-metadata", "allow-get-theme", "allow-set-theme"]
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "allow-get-app-metadata",
+    "allow-get-theme",
+    "allow-set-theme",
+    "allow-get-navcom-snapshot"
+  ]
 }
