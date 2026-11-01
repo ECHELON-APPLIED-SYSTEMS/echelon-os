@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { Appearance } from '../themes/Appearance';
+import { useDocumentTheme } from '../themes/useDocumentTheme';
+import { defaultTheme, type ThemeId } from '../themes/themes';
 import { moduleRegistry } from '../modules/registry';
 import { ModuleView } from './ModuleView';
 import { RuntimeStatus } from './RuntimeStatus';
@@ -12,6 +15,8 @@ const availabilityLabels = {
 } as const;
 
 export function App() {
+  const [theme, setTheme] = useState<ThemeId>(defaultTheme);
+  useDocumentTheme(theme);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selectedModule = selectedId
     ? moduleRegistry.get(selectedId)
@@ -58,6 +63,7 @@ export function App() {
             </button>
           ))}
         </nav>
+        <Appearance theme={theme} onChange={setTheme} />
         <div className="sidebar-footer">
           <span className="status-dot" aria-hidden="true" />
           Desktop foundation<small>M1-A · Development build</small>

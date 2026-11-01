@@ -1,0 +1,25 @@
+# M1-C-UI: five dark themes
+
+All five choices share the owner-approved **neutral** foundation: canvas **#191919**, sidebar **#202020**, and cards/panels **#242424**. These broad regions are never tinted by faction. Default text **#E8E8E8**, muted text **#B4B4B4**, secondary text **#D0D0D0**, hover **#2B2B2B**, controls **#2A2A2A** / **#333333**, dividers **#4A4A4A**, control borders **#919191**, error **#FFB8B2**, and positive status **#B8D8C2** are invariant too. Neutral roles have equal red/green/blue channels; the original blue bias has been removed.
+
+| ID         | Appearance                 | Accent/highlight direction |
+| ---------- | -------------------------- | -------------------------- |
+| `echelon`  | ECHELON Graphite (default) | Muted teal #83C8BF         |
+| `amarr`    | Amarr Empire               | Antique gold #D5B16A       |
+| `caldari`  | Caldari State              | Steel blue #78ACD7         |
+| `gallente` | Gallente Federation        | Emerald #63CB92            |
+| `minmatar` | Minmatar Republic          | Worn copper #D78A59        |
+
+Only `accent`, `accent-text`, `accent-wash` and `focus` vary. Highlights are confined to small brand/icon details, focus rings, selected navigation text/outline, the skip link and a restrained selected-item wash. Default buttons, surfaces, text and semantic status/error styling stay common Graphite. One `:root` base declares all shared tokens and the ECHELON fallback; each theme selector overrides exactly those four highlight tokens, never a full palette or layout.
+
+Use **Appearance** in the sidebar; on narrow screens it stays below navigation while the legacy footer hides. The native labelled select supports browser/OS keyboard interaction and announces its selected value. Changes apply immediately across the shared shell, module placeholder, runtime/error states and controls. Navigation is preserved. This phase stores selection only in App's in-memory state: every fresh page/app load starts with ECHELON Graphite. There is no local/session storage, cookie, IndexedDB, filesystem write, IPC, network request or persistence setting. Unmount restores the document's prior theme attribute, preventing test/embedding leaks.
+
+`src/themes/themes.ts` defines exactly five typed IDs/names and safe fallback for unknown values. `themes.css` separates the shared neutral base from four-token highlight overrides, not five component layouts. `styles.css` consumes those variables throughout. The document root's `data-theme` is the styling boundary; its attributes are set by one hook from the single App state. No window synchronisation or global theme service is implemented.
+
+All palettes use `color-scheme: dark`. Tests read the actual CSS, model the actual base-plus-highlight cascade, reject extra overriding selectors, check the exact neutral colors and invariant non-highlight roles, and check distinct accent signatures, and calculate sRGB WCAG contrast: normal text/muted/status/error roles at least 4.5:1 against used surfaces, accent text on its actual surfaces, selected text and skip-link contrast, and meaningful control borders/focus outlines at least 3:1. Decorative dividers are intentionally subdued; they do not carry a state by themselves. State labels remain text, not color-only. No animation/transition was introduced, including for theme changes, so reduced-motion users receive no new motion.
+
+Run `npm run lint`, `npm run format:check`, `npm run typecheck`, `npm test`, and `npm run build` from the repository root. Component tests cover native selector semantics/focus, all five live selections, NAVCOM continuity, honest browser preview, invalid selection, remount reset, document cleanup and absence of browser storage/network/native invocation. JSDOM cannot prove native popup behavior, real Tab order, OS focus rendering, screenreader announcements or scaling.
+
+Browser validation for the neutral revision exercises all five accent choices at 1360px and 390px widths: selector visible, no horizontal overflow, visible focus, no network requests during swaps, reload reset, and browser preview remained unavailable for desktop IPC. ArrowDown/Enter and Tab/Shift+Tab worked in the real browser. Neutral-revision screenshots are retained locally for visual review; previous faction-tinted screenshots are historical and do not represent the current design. These are Linux browser checks, not native Windows/WebView, screenreader or multi-DPI signoff. Final palette aesthetics remain subject to Product Owner visual review.
+
+This frontend-only branch starts from merged M1-A main. Native metadata and base build-stage badges remain M1-A deliberately; visual theming does not imply a native milestone was completed. M1-B PR #3 remains separate, draft/unmerged, with its native build HOLD intact. Its empty Rust preferences schema has no theme write API. Portable theme persistence requires separate approval after storage validation/merge; no changes to M1-B, Rust, CSP, capabilities, dependencies or workflow are made here. NAVCOM remains planned/nonfunctional. No faction imagery, logos, remote assets/fonts or third-party theme libraries are used.
