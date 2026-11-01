@@ -20,7 +20,7 @@ The repository is public with automatic lightweight frontend CI and explicitly r
 - Visual Studio 2022 Build Tools: **Desktop development with C++**, MSVC v143 x64/x86 tools and a Windows 10/11 SDK.
 - Internet access for initial npm/Cargo downloads and Tauri's build dependencies. No application credentials or signing certificate are required.
 
-Use a regular PowerShell terminal after installing prerequisites. Application development and the per-user installer do not require an elevated terminal.
+Use a regular PowerShell terminal after installing prerequisites. Portable application development and launch do not require an elevated terminal; NSIS installation is retired.
 
 ## Clean checkout and development
 
@@ -58,6 +58,17 @@ The executable is `src-tauri/target/release/echelon-os.exe`. All supported deskt
 
 These builds are unsigned; Windows may show expected publisher/SmartScreen warnings. No installer, registry setup or elevation is required. OS-provided Microsoft Edge WebView2 Evergreen is required and is not bundled or installed by this app. Signing, release publication and dependency-free runtime bundling are outside M1-B.
 
+### Native-independent regression commands
+
+The committed harness imports the actual Rust storage module without compiling Tauri/GTK/WebKit. With Rust 1.90.0 and PowerShell 7 installed:
+
+```sh
+cargo +1.90.0 test --manifest-path tools/storage-tests/Cargo.toml --locked
+pwsh -NoLogo -NoProfile -File scripts/test-package-portable.ps1
+```
+
+All nine original Linux storage tests and additional cache/bounds/link regressions run in this target. Packaging checks use synthetic files/archives only, not a Windows application build. See [portable validation and scan-risk assessment](docs/PORTABLE.md). A bounded standard Ubuntu CI job executes these checks on the same automatic events as frontend checks. Full native validation remains on hold.
+
 ### Continuous and on-demand CI
 
 `.github/workflows/windows.yml` runs lightweight frontend checks on standard `ubuntu-latest` for PR opened/synchronize/reopened events and pushes to `main`, including draft PRs: `npm ci`, lint, formatting, strict type checking, unit/component tests and production frontend build. These runs do not build installers or upload artifacts.
@@ -66,7 +77,7 @@ Full validation uses standard `windows-latest` only on an explicit `workflow_dis
 
 Before merge, a maintainer can explicitly request the full build by applying `run-windows-build` to the PR. Manual **Run workflow** / `workflow_dispatch` becomes available only after this workflow exists on the default branch; then select the intended ref explicitly. Neither a normal PR update nor a `main` push requests a Windows build. No full build is requested by this CI split.
 
-Full builds stage only the unsigned EXE and portable README in an extract-and-run `ECHELON-OS` folder, enforce a 50 MiB payload guard and upload `echelon-os-portable-windows-x64.zip` as a **one-day** artifact named `echelon-os-portable-windows-unsigned-<github.sha>`. No app-data is populated or packaged in CI. For PR events, the SHA is the generated test merge ref; verify its parents. Permissions remain read-only, with no publishing step or secrets. Standard public hosted-runner time is free, while artifact storage has a finite shared allowance; respect approved spending safeguards.
+Full builds use the tested packaging script with fresh owned staging and exact payload/archive allowlists to stage only the unsigned EXE and portable README in an extract-and-run `ECHELON-OS` folder, enforce a 50 MiB payload guard and upload `echelon-os-portable-windows-x64.zip` as a **one-day** artifact named `echelon-os-portable-windows-unsigned-<github.sha>`. No app-data is populated or packaged in CI. For PR events, the SHA is the generated test merge ref; verify its parents. Permissions remain read-only, with no publishing step or secrets. Standard public hosted-runner time is free, while artifact storage has a finite shared allowance; respect approved spending safeguards.
 
 This packaging path is pending separate Windows build approval; no full run is triggered by M1-B. Historical M1-A NSIS evidence remains historical, and new NSIS acceptance is not required. See `docs/SMOKE_TEST.md` for pending portable runtime, data isolation, move/relaunch and recovery checks.
 

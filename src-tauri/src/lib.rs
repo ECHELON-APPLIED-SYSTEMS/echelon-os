@@ -117,7 +117,7 @@ mod tests {
             .deserialize::<serde_json::Value>()
             .expect("metadata must deserialize");
         assert_eq!(response["name"], "ECHELON OS");
-        assert_eq!(response["milestone"], "M1-A");
+        assert_eq!(response["milestone"], "M1-B");
         assert!(get_ipc_response(&other, request("get_app_metadata", local)).is_err());
         assert!(
             get_ipc_response(&main, request("get_app_metadata", "https://example.com")).is_err()

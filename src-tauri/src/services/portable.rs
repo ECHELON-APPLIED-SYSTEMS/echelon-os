@@ -11,6 +11,8 @@ use std::{
 
 const SETTINGS: &str = "settings.json";
 const MAX_SETTINGS_BYTES: u64 = 4096;
+const MAX_TREE_DEPTH: usize = 64;
+const MAX_TREE_ENTRIES: usize = 100_000;
 static NEXT_FILE: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -236,12 +238,12 @@ fn initialise_with_probe(
 }
 
 fn validate_tree(path: &Path, depth: usize, count: &mut usize) -> Result<(), StorageError> {
-    if depth > 64 {
+    if depth > MAX_TREE_DEPTH {
         return Err(StorageError::UnsafePath);
     }
     for entry in fs::read_dir(path).map_err(|_| StorageError::Unavailable)? {
         *count += 1;
-        if *count > 100_000 {
+        if *count > MAX_TREE_ENTRIES {
             return Err(StorageError::UnsafePath);
         }
         let entry = entry.map_err(|_| StorageError::Unavailable)?;
@@ -419,6 +421,60 @@ mod tests {
             assert_eq!(initialise(&f.exe()).unwrap_err(), StorageError::UnsafePath);
             assert_eq!(fs::read_dir(&outside.0).unwrap().count(), 0);
         }
+    }
+
+    #[test]
+    fn large_regular_cache_is_valid_and_scan_cost_is_reported() {
+        let f = Fixture::new();
+        initialise(&f.exe()).unwrap();
+        let cache = f.root().join("caches").join("synthetic-profile");
+        fs::create_dir(&cache).unwrap();
+        let mut previous = 0;
+        for count in [1_000, 10_000] {
+            for index in previous..count {
+                File::create(cache.join(format!("entry-{index}"))).unwrap();
+            }
+            let start = std::time::Instant::now();
+            assert_eq!(initialise(&f.exe()).unwrap().1, Settings::default());
+            eprintln!(
+                "portable scan: {count} warm synthetic files, {:?}",
+                start.elapsed()
+            );
+            previous = count;
+        }
+    }
+
+    #[test]
+    fn depth_and_entry_budgets_still_fail_closed() {
+        let f = Fixture::new();
+        fs::create_dir(f.root()).unwrap();
+        File::create(f.root().join("file")).unwrap();
+        // Seed the counter at the exact boundary rather than create 100,001 files in CI.
+        let mut entries = MAX_TREE_ENTRIES;
+        assert_eq!(
+            validate_tree(&f.root(), 0, &mut entries),
+            Err(StorageError::UnsafePath)
+        );
+        let mut deepest = f.root();
+        for _ in 0..=MAX_TREE_DEPTH {
+            deepest = deepest.join("d");
+            fs::create_dir(&deepest).unwrap();
+        }
+        assert_eq!(initialise(&f.exe()).unwrap_err(), StorageError::UnsafePath);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn link_inside_nested_profile_is_rejected_without_target_writes() {
+        use std::os::unix::fs::symlink;
+        let f = Fixture::new();
+        initialise(&f.exe()).unwrap();
+        let profile = f.root().join("caches").join("nested-profile");
+        fs::create_dir(&profile).unwrap();
+        let outside = Fixture::new();
+        symlink(&outside.0, profile.join("nested-link")).unwrap();
+        assert_eq!(initialise(&f.exe()).unwrap_err(), StorageError::UnsafePath);
+        assert_eq!(fs::read_dir(&outside.0).unwrap().count(), 0);
     }
 
     #[cfg(windows)]

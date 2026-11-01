@@ -43,7 +43,7 @@ describe('application shell', () => {
         name: 'ECHELON OS',
         version: '0.1.0',
         platform: 'windows',
-        milestone: 'M1-A',
+        milestone: 'M1-B',
       },
     });
     render(<App />);

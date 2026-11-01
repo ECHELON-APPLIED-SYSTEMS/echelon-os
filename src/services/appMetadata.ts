@@ -4,7 +4,7 @@ export type AppMetadata = Readonly<{
   name: 'ECHELON OS';
   version: string;
   platform: string;
-  milestone: 'M1-A';
+  milestone: 'M1-B';
 }>;
 
 export type MetadataResult =
@@ -24,7 +24,7 @@ function parseMetadata(value: unknown): AppMetadata {
     typeof value.platform !== 'string' ||
     !value.platform.trim() ||
     !('milestone' in value) ||
-    value.milestone !== 'M1-A'
+    value.milestone !== 'M1-B'
   ) {
     throw new Error('The desktop returned an invalid metadata response.');
   }

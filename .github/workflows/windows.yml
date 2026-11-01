@@ -44,6 +44,25 @@ jobs:
         run: npm test
       - name: Frontend production build
         run: npm run build
+  storage:
+    name: Portable storage tests
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' &&
+       contains(fromJSON('["opened", "synchronize", "reopened"]'), github.event.action))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.90.0 --profile minimal
+      - name: Native-independent storage regressions
+        run: cargo +1.90.0 test --manifest-path tools/storage-tests/Cargo.toml --locked
+      - name: Offline portable packaging regressions
+        shell: pwsh
+        run: ./scripts/test-package-portable.ps1
   desktop:
     name: Windows checks and portable ZIP
     if: >-
@@ -89,15 +108,7 @@ jobs:
         run: npm run tauri -- build --no-bundle -- --locked
       - name: Package portable Windows ZIP
         shell: pwsh
-        run: |
-          $stage = 'src-tauri/target/release/portable/ECHELON-OS'
-          New-Item -ItemType Directory -Path $stage -ErrorAction Stop | Out-Null
-          Copy-Item 'src-tauri/target/release/echelon-os.exe' "$stage/echelon-os.exe" -ErrorAction Stop
-          Copy-Item 'docs/PORTABLE.md' "$stage/README.txt" -ErrorAction Stop
-          $files = @(Get-ChildItem $stage -Recurse -File)
-          if ($files.Count -ne 2 -or (Test-Path "$stage/app-data")) { throw 'Unexpected portable payload' }
-          if (($files | Measure-Object -Property Length -Sum).Sum -gt 50MB) { throw 'Portable payload exceeds 50 MiB guard' }
-          Compress-Archive -Path $stage -DestinationPath 'src-tauri/target/release/portable/echelon-os-portable-windows-x64.zip' -ErrorAction Stop
+        run: ./scripts/package-portable.ps1 -Executable src-tauri/target/release/echelon-os.exe -Readme docs/PORTABLE.md -Output src-tauri/target/release/portable/echelon-os-portable-windows-x64.zip
       - name: Upload unsigned Windows artifacts
         uses: actions/upload-artifact@v4
         with:

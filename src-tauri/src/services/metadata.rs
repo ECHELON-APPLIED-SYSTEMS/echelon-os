@@ -13,7 +13,7 @@ pub fn read() -> AppMetadata {
         name: "ECHELON OS",
         version: env!("CARGO_PKG_VERSION"),
         platform: std::env::consts::OS,
-        milestone: "M1-A",
+        milestone: "M1-B",
     }
 }
 

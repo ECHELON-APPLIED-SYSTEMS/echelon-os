@@ -60,7 +60,7 @@ export function App() {
         </nav>
         <div className="sidebar-footer">
           <span className="status-dot" aria-hidden="true" />
-          Desktop foundation<small>M1-A · Development build</small>
+          Desktop foundation<small>M1-B · Development build</small>
         </div>
       </aside>
       <div className="workspace">
@@ -73,7 +73,7 @@ export function App() {
             <strong>{selectedModule?.name ?? 'Overview'}</strong>
           </span>
           <span className="build-label">
-            ECHELON OS <span className="badge">M1-A</span>
+            ECHELON OS <span className="badge">M1-B</span>
           </span>
         </header>
         <main id="main-content" tabIndex={-1}>

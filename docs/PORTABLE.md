@@ -42,6 +42,28 @@ npm run tauri -- build --no-bundle -- --locked
 
 The shared Tauri config intentionally applies `appDirectoriesOverride: "./app-data"` to **every supported distribution**, since M1-B no longer supports an installed flavour. Startup resolves and validates the absolute executable-adjacent path before configuring Tauri. Development data stays beside the built executable under the ignored target tree; browser preview does not invoke native storage. Tests use isolated temporary fixtures and a mocked runtime, not global user AppData. No arbitrary file access or new IPC permissions are granted.
 
-The on-demand standard Windows job preserves full frontend/Rust checks and stages only the EXE plus this readme in `ECHELON-OS`. It rejects unexpected payloads or payloads over 50 MiB, compresses the folder and uploads only the explicitly named ZIP with one-day retention. No app-data, cache, secrets or test files are packaged. This packaging path has not been executed for M1-B until a separate Windows run is approved. Automatic PR/main checks remain frontend-only; dispatch/label triggers are unchanged. There is no updater, autostart, registry setup, elevation request, telemetry, new runtime background service or release publication.
+The on-demand standard Windows job calls `scripts/package-portable.ps1`, preserves full frontend/Rust checks and stages only the EXE plus this readme in a newly created private scratch `ECHELON-OS` folder. It never reuses or recursively cleans arbitrary pre-existing staging data. It enumerates every immediate entry with hidden entries included, rejects all directories, reparse points/links, hidden/system files, non-allowlisted names and payloads over 50 MiB. It validates the produced archive against the exact two-file entry allowlist (an empty parent entry is harmless), rejects duplicates/traversal/links and enforces the uncompressed-size limit again before no-replace publication. Only the explicitly named ZIP is uploaded with one-day retention. No app-data, cache, secrets or test files are packaged. This packaging path has not been executed for M1-B until a separate Windows run is approved. Automatic PR/main checks remain frontend-only; dispatch/label triggers are unchanged. There is no updater, autostart, registry setup, elevation request, telemetry, new runtime background service or release publication.
 
 See docs/SMOKE_TEST.md in the source repository for the acceptance procedure. M1-A's earlier native launch evidence does not validate M1-B storage or this ZIP.
+
+## Reproducible source-only validation
+
+From a clean checkout with Rust 1.90.0 and PowerShell 7 installed:
+
+```sh
+cargo +1.90.0 test --manifest-path tools/storage-tests/Cargo.toml --locked
+cargo +1.90.0 clippy --manifest-path tools/storage-tests/Cargo.toml --locked --all-targets -- -D warnings
+pwsh -NoLogo -NoProfile -File scripts/test-package-portable.ps1
+```
+
+The committed harness imports the production storage module and exact locked serde versions. All nine original Linux storage tests plus three regression/scan tests run without Tauri, GTK or WebKit. The bounded five-minute standard Ubuntu storage CI job runs these tests and synthetic packaging checks on normal automatic PR/main events. It does not execute an EXE, compile Tauri/Windows, produce an application ZIP or upload artifacts. PowerShell tests use fake file bytes and disposable temporary archives only; no Pester/new project dependency is required. Full Windows conditions are unchanged and remain on hold.
+
+### Startup scan assessment — retained, performance risk deferred
+
+`validate_tree` still inspects the entire data tree on each launch to reject nested links/reparse points before WebView receives it. It is O(total entries), with unchanged hard limits of 64 levels and 100,000 entries. A local Linux fixture measured approximately **1.61 ms for 1,000** and **13.24 ms for 10,000** recently created regular cache files, plus the normal root metadata/probe/settings overhead. These are warm synthetic local filesystem measurements, not cold-cache, Windows, removable-drive or real WebView profile benchmarks, and no timing threshold is asserted in CI. Reproduce current timings with:
+
+```sh
+cargo +1.90.0 test --manifest-path tools/storage-tests/Cargo.toml --locked large_regular_cache -- --nocapture
+```
+
+A 10,000-file legitimate cache succeeds; deep nested link, depth and entry-budget regressions remain fail-closed. Skipping WebView cache trees or caching scan results would allow links added since the last scan and weaken the current protection. No safe narrow platform-neutral optimisation has been established, so traversal behavior is intentionally preserved. Large/cold Windows profiles may still launch slowly or hit the limits; this is a **deferred performance/availability risk**, not a solved or Windows-validated property. A future handle-based Windows design or realistic profiling needs separate scoped review when it blocks a concrete decision; this remediation requests no native build.
