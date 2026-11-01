@@ -66,7 +66,7 @@ export function App() {
         <Appearance theme={theme} onChange={setTheme} />
         <div className="sidebar-footer">
           <span className="status-dot" aria-hidden="true" />
-          Desktop foundation<small>M1-A · Development build</small>
+          Desktop foundation<small>M1-B · Development build</small>
         </div>
       </aside>
       <div className="workspace">
@@ -79,7 +79,7 @@ export function App() {
             <strong>{selectedModule?.name ?? 'Overview'}</strong>
           </span>
           <span className="build-label">
-            ECHELON OS <span className="badge">M1-A</span>
+            ECHELON OS <span className="badge">M1-B</span>
           </span>
         </header>
         <main id="main-content" tabIndex={-1}>
@@ -169,8 +169,8 @@ export function App() {
               </section>
               <RuntimeStatus />
               <p className="scope-note">
-                No EVE connection is configured. Workspaces and settings are not
-                saved in this build.
+                No EVE connection is configured. Appearance and workspace
+                choices are not saved between launches.
               </p>
             </>
           )}

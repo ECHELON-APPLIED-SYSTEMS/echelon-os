@@ -7,7 +7,7 @@ const metadata = {
   name: 'ECHELON OS',
   version: '0.1.0',
   platform: 'windows',
-  milestone: 'M1-A',
+  milestone: 'M1-B',
 };
 
 beforeEach(() => {
@@ -35,7 +35,7 @@ describe('desktop metadata boundary', () => {
     {},
     { ...metadata, version: '' },
     { ...metadata, platform: 12 },
-    { ...metadata, milestone: 'M1-B' },
+    { ...metadata, milestone: 'M1-A' },
     { ...metadata, name: 'Other app' },
   ])('rejects malformed responses: %j', async (value) => {
     vi.mocked(invoke).mockResolvedValue(value);

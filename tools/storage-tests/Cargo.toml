@@ -1,0 +1,10 @@
+[package]
+name = "echelon-storage-tests"
+version = "0.1.0"
+edition = "2021"
+publish = false
+rust-version = "1.90"
+
+[dependencies]
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.154"

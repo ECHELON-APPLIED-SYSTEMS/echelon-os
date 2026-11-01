@@ -43,13 +43,22 @@ describe('application shell', () => {
         name: 'ECHELON OS',
         version: '0.1.0',
         platform: 'windows',
-        milestone: 'M1-A',
+        milestone: 'M1-B',
       },
     });
     render(<App />);
     expect(await screen.findByText('Desktop connected')).toBeVisible();
     expect(screen.getByText('windows')).toBeVisible();
     expect(screen.getByText('0.1.0')).toBeVisible();
+    // Integrated metadata must coexist with the ephemeral M1-C selector.
+    const appearance = screen.getByRole('combobox', { name: 'Appearance' });
+    fireEvent.change(appearance, { target: { value: 'caldari' } });
+    expect(document.documentElement).toHaveAttribute('data-theme', 'caldari');
+    expect(screen.getByText('Desktop connected')).toBeVisible();
+    expect(screen.getAllByText('M1-B').length).toBeGreaterThanOrEqual(2);
+    expect(
+      screen.getByText(/Appearance and workspace choices/),
+    ).toHaveTextContent('not saved between launches');
   });
 
   it('renders a pending state, then an accessible error and a working explicit retry', async () => {

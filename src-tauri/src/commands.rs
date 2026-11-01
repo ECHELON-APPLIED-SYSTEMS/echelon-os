@@ -16,7 +16,7 @@ mod tests {
         assert_eq!(result["name"], "ECHELON OS");
         assert_eq!(result["version"], env!("CARGO_PKG_VERSION"));
         assert_eq!(result["platform"], std::env::consts::OS);
-        assert_eq!(result["milestone"], "M1-A");
+        assert_eq!(result["milestone"], "M1-B");
         assert_eq!(result.as_object().expect("object").len(), 4);
     }
 }
