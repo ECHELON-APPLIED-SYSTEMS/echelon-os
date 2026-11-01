@@ -10,6 +10,7 @@ fn main() {
                 "get_app_metadata",
                 "get_theme",
                 "set_theme",
+                "get_navcom_snapshot",
             ])),
     )
     .expect("failed to build ECHELON OS application resources");

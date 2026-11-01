@@ -24,6 +24,14 @@ pub fn set_theme(
         .map_err(|error| error.message().to_owned())
 }
 
+/// Explicit read only; no arguments or caller-selected paths.
+#[tauri::command]
+pub fn get_navcom_snapshot(
+    store: tauri::State<'_, crate::services::portable::PortableStore>,
+) -> crate::services::navcom::SnapshotRead {
+    crate::services::navcom::read(&store)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
