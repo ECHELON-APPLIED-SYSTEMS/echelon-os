@@ -43,3 +43,9 @@ Historical pre-theme M1-B evidence: [Windows run #41297744749](https://github.co
 ## Source integration note
 
 The basic portable extraction/launch/relaunch/data behavior above was subsequently reported “All good” by the Product Owner for the pre-theme M1-B artifact from run #41297744749. That report is not an individually documented advanced test record. The current source integrates merged M1-C five-theme UI, keeps metadata M1-B and does not persist Appearance/workspace choices. The earlier artifact does not represent this combined tree. All combined-tree native checks, and individually undocumented advanced ACL/junction/cross-drive/WebView/no-AppData/DPI/screenreader cases, remain unverified; no new Windows run is authorised by this source-only task.
+
+## M1-D persistence — automated scope, no repeated manual smoke requested
+
+The historical M1-A/M1-B checklists and accepted baseline results above are not claims about M1-D. Current schema v2 allows only an optional theme ID; strict legacy v1 empty preferences load unchanged and upgrade on explicit successful save. Automated production-module tests cover defaults, compatibility, each ID save/reload, corrupt/future/null/unknown refusal, failed save preservation/retry, locks/concurrent callers, external edits and moved-root reload. Frontend tests cover restore, pending acknowledgment, honest save/load error/retry and temporary browser preview. A real Tauri ACL test covers typed local-main-only commands but remains unrun without native prerequisites.
+
+No additional manual Windows smoke or full Windows build is requested solely for persistence, per Product Owner direction. New Windows file-lock/replace/ACL and complete Tauri runtime behavior remain unverified; report a newly demonstrated native blocker instead of automatically triggering a build. This is not full release, assistive-tech, DPI, removable filesystem or power-loss certification.

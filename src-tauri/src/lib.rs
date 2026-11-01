@@ -5,8 +5,8 @@ pub fn run() {
     // Validate storage BEFORE Builder::run creates a native window or WebView profile.
     let storage = std::env::current_exe()
         .map_err(|_| services::portable::StorageError::Unavailable)
-        .and_then(|executable| services::portable::initialise(&executable));
-    let (root, _settings) = match storage {
+        .and_then(|executable| services::portable::PortableStore::open(&executable));
+    let storage = match storage {
         Ok(storage) => storage,
         Err(error) => {
             startup_error(error.message());
@@ -15,9 +15,14 @@ pub fn run() {
     };
     let mut context = tauri::generate_context!();
     // Pin the supported override to the validated absolute executable-adjacent root.
-    context.config_mut().app.app_directories_override =
-        Some(tauri::utils::config::AppDirectoriesOverride::Root(root));
-    if configure(tauri::Builder::default()).run(context).is_err() {
+    context.config_mut().app.app_directories_override = Some(
+        tauri::utils::config::AppDirectoriesOverride::Root(storage.root().to_path_buf()),
+    );
+    if configure(tauri::Builder::default())
+        .manage(storage)
+        .run(context)
+        .is_err()
+    {
         startup_error("ECHELON OS could not start its desktop window. Ensure Microsoft Edge WebView2 Evergreen Runtime is installed, close other copies, and retry from a writable extracted folder. No alternative storage location was selected.");
         std::process::exit(1);
     }
@@ -50,7 +55,11 @@ fn startup_error(message: &str) {
 }
 
 fn configure<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R> {
-    builder.invoke_handler(tauri::generate_handler![commands::get_app_metadata])
+    builder.invoke_handler(tauri::generate_handler![
+        commands::get_app_metadata,
+        commands::get_theme,
+        commands::set_theme
+    ])
 }
 
 #[cfg(test)]
@@ -95,6 +104,67 @@ mod tests {
         assert_eq!(app.path().app_local_data_dir().unwrap(), root);
         assert_eq!(app.path().app_cache_dir().unwrap(), root.join("caches"));
         assert_eq!(app.path().app_log_dir().unwrap(), root.join("logs"));
+    }
+
+    #[test]
+    fn appearance_ipc_is_typed_and_main_local_only() {
+        use crate::services::portable::{PortableStore, ThemeId};
+        let root = std::env::temp_dir().join(format!(
+            "echelon-ipc-settings-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir(&root).unwrap();
+        {
+            let store = PortableStore::open(&root.join("echelon-os.exe")).unwrap();
+            let mut context = tauri::generate_context!();
+            context.config_mut().app.app_directories_override = Some(
+                tauri::utils::config::AppDirectoriesOverride::Root(store.root().to_path_buf()),
+            );
+            let app = configure(mock_builder())
+                .manage(store)
+                .build(context)
+                .unwrap();
+            let main = WebviewWindowBuilder::new(&app, "main", Default::default())
+                .build()
+                .unwrap();
+            let other = WebviewWindowBuilder::new(&app, "other", Default::default())
+                .build()
+                .unwrap();
+            let local = "http://tauri.localhost";
+            let mut write = request("set_theme", local);
+            write.body = InvokeBody::Json(serde_json::json!({"theme": "amarr"}));
+            assert!(get_ipc_response(&main, write).is_ok());
+            assert_eq!(
+                get_ipc_response(&main, request("get_theme", local))
+                    .unwrap()
+                    .deserialize::<ThemeId>()
+                    .unwrap(),
+                ThemeId::Amarr
+            );
+            for command in ["get_theme", "set_theme"] {
+                let mut forbidden = request(command, local);
+                forbidden.body = InvokeBody::Json(serde_json::json!({"theme":"caldari"}));
+                assert!(get_ipc_response(&other, forbidden).is_err());
+                let mut remote = request(command, "https://example.com");
+                remote.body = InvokeBody::Json(serde_json::json!({"theme":"caldari"}));
+                assert!(get_ipc_response(&main, remote).is_err());
+            }
+            let mut invalid = request("set_theme", local);
+            invalid.body = InvokeBody::Json(serde_json::json!({"theme":"../../outside"}));
+            assert!(get_ipc_response(&main, invalid).is_err());
+            assert_eq!(
+                get_ipc_response(&main, request("get_theme", local))
+                    .unwrap()
+                    .deserialize::<ThemeId>()
+                    .unwrap(),
+                ThemeId::Amarr
+            );
+        }
+        std::fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
