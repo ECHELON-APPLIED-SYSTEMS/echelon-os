@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main-metadata",
-  "description": "The local main window may read compile-time application metadata only.",
+  "description": "The local main window may read build metadata and read or save an allowlisted portable Appearance selection only.",
   "local": true,
   "windows": ["main"],
-  "permissions": ["allow-get-app-metadata"]
+  "permissions": ["allow-get-app-metadata", "allow-get-theme", "allow-set-theme"]
 }

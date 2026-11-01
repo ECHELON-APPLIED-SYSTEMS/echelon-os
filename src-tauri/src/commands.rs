@@ -6,6 +6,24 @@ pub fn get_app_metadata() -> AppMetadata {
     metadata::read()
 }
 
+/// Concrete Appearance value only; paths and arbitrary settings are never accepted.
+#[tauri::command]
+pub fn get_theme(
+    store: tauri::State<'_, crate::services::portable::PortableStore>,
+) -> Result<crate::services::portable::ThemeId, String> {
+    store.theme().map_err(|error| error.message().to_owned())
+}
+
+#[tauri::command]
+pub fn set_theme(
+    theme: crate::services::portable::ThemeId,
+    store: tauri::State<'_, crate::services::portable::PortableStore>,
+) -> Result<(), String> {
+    store
+        .set_theme(theme)
+        .map_err(|error| error.message().to_owned())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

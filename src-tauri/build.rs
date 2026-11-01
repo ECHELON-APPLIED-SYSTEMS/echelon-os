@@ -6,7 +6,11 @@ fn main() {
             // Embed the Windows manifest separately for all linkable targets,
             // including lib unit tests; Tauri's default resource is bins-only.
             .windows_attributes(tauri_build::WindowsAttributes::new_without_app_manifest())
-            .app_manifest(tauri_build::AppManifest::new().commands(&["get_app_metadata"])),
+            .app_manifest(tauri_build::AppManifest::new().commands(&[
+                "get_app_metadata",
+                "get_theme",
+                "set_theme",
+            ])),
     )
     .expect("failed to build ECHELON OS application resources");
 
