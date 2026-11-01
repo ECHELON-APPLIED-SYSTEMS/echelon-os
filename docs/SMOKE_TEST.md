@@ -26,7 +26,7 @@ Record Windows version, WebView2 version, commit SHA, build command or Actions r
 | Release CSP and IPC                   | Not performed     |
 | Per-user install / launch / uninstall | Not performed     |
 
-## M1-B portable acceptance — not performed
+## M1-B portable acceptance — validation status
 
 The primary M1-B target is the portable ZIP. Historical M1-A NSIS results remain above; NSIS generation is retired for new builds. No new Windows build or smoke test is implied by this procedure.
 
@@ -38,7 +38,7 @@ The primary M1-B target is the portable ZIP. Historical M1-A NSIS results remain
 6. Test missing Evergreen WebView2 on an isolated suitable machine; confirm readable startup recovery guidance and no automatic runtime install. Reinstall/repair only from Microsoft through an owner-approved route. Do not remove shared WebView2 from a primary machine for this check.
 7. Repeat keyboard-only navigation/focus, window resize/minimise/restore/close/relaunch, scaling and accessibility checks. Record which checks were actually performed. Confirm no app updater/autostart/registry setup or extra application-managed background process.
 
-M1-B Windows build, ZIP payload, real profile placement, ACL denial, cross-drive move, no-AppData comparison and runtime smoke: **Not performed** pending separate authorisation. Automated storage tests cannot substitute for these checks. No theme preference or general settings editor exists; persistence is exercised by the internal Rust seam and read-only startup/reload behavior.
+Historical pre-theme M1-B evidence: [Windows run #41297744749](https://github.com/ECHELON-APPLIED-SYSTEMS/echelon-os/actions/runs/41297744749) passed Rust tests, frontend checks, the EXE build and portable ZIP packaging. The Product Owner reported extracted application/basic launch, relaunch and portable-data smoke “All good”. Advanced profile containment, ACL recovery, junction, cross-drive, no-AppData, missing-runtime, DPI and screenreader checks are **not individually verified**. The current combined M1-B/M1-C tree has **not undergone a native Windows build or native smoke**; separate approval is required. Automated storage tests and historical artifacts cannot substitute for those checks. Appearance preferences remain unsaved, with no general settings writer; only the immutable base settings file is initialised/reloaded.
 
 ## Source integration note
 
