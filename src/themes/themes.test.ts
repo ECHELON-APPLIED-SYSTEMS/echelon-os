@@ -4,17 +4,22 @@ import { defaultTheme, resolveTheme, themes } from './themes';
 
 const css = readFileSync('src/themes/themes.css', 'utf8');
 const shellCss = readFileSync('src/shell/styles.css', 'utf8');
-const palettes: Record<string, Record<string, string>> = Object.fromEntries(
+function tokens(block: string): Record<string, string> {
+  return Object.fromEntries(
+    [...block.matchAll(/--([\w-]+):\s*(#[\da-f]{6})/g)].map(
+      ([, token = '', value = '']) => [token, value],
+    ),
+  );
+}
+const base = tokens(css.match(/:root\s*\{([^}]+)\}/)?.[1] ?? '');
+const highlights = ['accent', 'accent-text', 'accent-wash', 'focus'];
+const overrides: Record<string, Record<string, string>> = Object.fromEntries(
   [...css.matchAll(/:root\[data-theme='([a-z]+)'\]\s*\{([^}]+)\}/g)].map(
-    ([, id = '', block = '']) => [
-      id,
-      Object.fromEntries(
-        [...block.matchAll(/--([\w-]+):\s*(#[\da-f]{6})/g)].map(
-          ([, token = '', value = '']) => [token, value],
-        ),
-      ) as Record<string, string>,
-    ],
+    ([, id = '', block = '']) => [id, tokens(block)],
   ),
+);
+const palettes: Record<string, Record<string, string>> = Object.fromEntries(
+  Object.entries(overrides).map(([id, values]) => [id, { ...base, ...values }]),
 );
 
 function paletteFor(id: string): Record<string, string> {
@@ -73,7 +78,60 @@ describe('five dark themes', () => {
     ).toBe(5);
     expect(
       new Set(Object.values(palettes).map((p) => color(p, 'canvas'))).size,
-    ).toBe(5);
+    ).toBe(1);
+  });
+
+  it('inherits the locked neutral foundation with only explicit highlight overrides', () => {
+    expect(base.canvas).toBe('#191919');
+    expect(base.sidebar).toBe('#202020');
+    expect(base.surface).toBe('#242424');
+    expect(base.panel).toBe('#242424');
+    const neutral = [
+      'canvas',
+      'sidebar',
+      'surface',
+      'panel',
+      'text',
+      'muted',
+      'secondary-text',
+      'hover',
+      'line',
+      'control',
+      'control-hover',
+      'control-border',
+      'on-accent',
+    ];
+    for (const { id } of themes) {
+      expect(Object.keys(overrides[id] ?? {}).sort()).toEqual(
+        [...highlights].sort(),
+      );
+      const palette = paletteFor(id);
+      for (const token of Object.keys(base).filter(
+        (key) => !highlights.includes(key),
+      )) {
+        expect(color(palette, token), `${id} invariant ${token}`).toBe(
+          base[token],
+        );
+      }
+      for (const token of neutral) {
+        const hex = color(palette, token).slice(1);
+        expect(hex.slice(0, 2)).toBe(hex.slice(2, 4));
+        expect(hex.slice(2, 4)).toBe(hex.slice(4, 6));
+      }
+    }
+    // Reject extra selectors/media overrides that could silently defeat the modeled cascade.
+    expect(
+      css
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/:root(?:\[data-theme='[a-z]+'\])?\s*\{[^}]*\}/g, '')
+        .trim(),
+    ).toBe('');
+    expect(shellCss).toMatch(
+      /\.runtime-connected\s*\{\s*color: var\(--status\)/,
+    );
+    expect(shellCss).toMatch(
+      /\.status-dot\s*\{[^}]*background: var\(--status\)/,
+    );
   });
 
   it.each([undefined, null, '', 'unknown', 'AMARR', '__proto__', 42])(
@@ -105,7 +163,13 @@ describe('five dark themes', () => {
         expect(luminance(color(p, bg)), `${id} ${bg} is dark`).toBeLessThan(
           0.1,
         );
-        for (const fg of ['text', 'muted', 'secondary-text', 'error']) {
+        for (const fg of [
+          'text',
+          'muted',
+          'secondary-text',
+          'error',
+          'status',
+        ]) {
           expect(
             contrast(color(p, fg), color(p, bg)),
             `${id} ${fg}/${bg}`,
@@ -137,6 +201,9 @@ describe('five dark themes', () => {
       expect(
         contrast(color(p, 'accent-text'), color(p, 'accent-wash')),
       ).toBeGreaterThanOrEqual(4.5);
+      expect(
+        contrast(color(p, 'accent'), color(p, 'accent-wash')),
+      ).toBeGreaterThanOrEqual(3);
       expect(
         contrast(color(p, 'on-accent'), color(p, 'accent')),
       ).toBeGreaterThanOrEqual(4.5);

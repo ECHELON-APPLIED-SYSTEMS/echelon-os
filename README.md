@@ -14,7 +14,7 @@ The repository is public and GitHub Actions are enabled. The first controlled [W
 
 ## M1-C-UI theme review
 
-The frontend-only theme branch adds ECHELON Graphite plus four distinct dark empire palettes through **Appearance**. Selection updates immediately and resets on a fresh load; there is no theme persistence yet. See [theme architecture, accessibility checks and limits](docs/THEMES.md). This work is independent of draft M1-B storage; no native milestone, build or merge is implied.
+The frontend-only theme branch adds five accent choices over the same neutral Graphite surfaces (#191919 canvas, #202020 sidebar, #242424 cards/panels) through **Appearance**. Selection updates immediately and resets on a fresh load; there is no theme persistence yet. See [theme architecture, accessibility checks and limits](docs/THEMES.md). This work is independent of draft M1-B storage; no native milestone, build or merge is implied.
 
 ## Windows prerequisites
 

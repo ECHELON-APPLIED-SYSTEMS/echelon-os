@@ -87,7 +87,7 @@ p {
   width: 32px;
   height: 36px;
   color: var(--accent);
-  border: 1px solid var(--control-border);
+  border: 1px solid var(--accent);
   font-size: 1.4rem;
 }
 .brand-os {
@@ -134,7 +134,7 @@ p {
 }
 .nav-item[aria-current] {
   background: var(--accent-wash);
-  border-color: var(--control-border);
+  border-color: var(--accent);
   color: var(--accent-text);
 }
 .nav-item > span:first-child {
@@ -159,7 +159,7 @@ p {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--status);
   margin: 0 9px 2px 0;
 }
 .workspace {
@@ -319,7 +319,7 @@ main {
   font-size: 0.8rem;
 }
 .runtime-connected {
-  color: var(--accent);
+  color: var(--status);
 }
 .metadata {
   display: grid;
