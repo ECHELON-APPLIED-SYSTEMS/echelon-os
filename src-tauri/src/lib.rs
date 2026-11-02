@@ -1,6 +1,9 @@
 mod commands;
 mod services;
 
+// Pure converter API for future explicitly authorised integration.
+pub use services::sde;
+
 pub fn run() {
     // Validate storage BEFORE Builder::run creates a native window or WebView profile.
     let storage = std::env::current_exe()

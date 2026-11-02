@@ -7,3 +7,6 @@ pub mod navcom;
 
 #[path = "../../../src-tauri/src/services/eve/mod.rs"]
 pub mod eve;
+
+#[path = "../../../src-tauri/src/services/sde/mod.rs"]
+pub mod sde;
