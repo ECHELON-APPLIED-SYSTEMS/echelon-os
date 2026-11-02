@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main-metadata",
-  "description": "The local main window may use typed metadata, Appearance, fixed NAVCOM snapshot and explicit session-only EVE commands.",
+  "description": "The local main window may use typed metadata, Appearance, fixed NAVCOM reads, explicit pinned route installation and session-only EVE commands.",
   "local": true,
   "windows": [
     "main"
@@ -16,6 +16,8 @@
     "allow-eve-disconnect",
     "allow-eve-refresh-location",
     "allow-eve-prepare-waypoint",
-    "allow-eve-send-waypoint"
+    "allow-eve-send-waypoint",
+    "allow-install-route-database",
+    "allow-get-route-install-status"
   ]
 }

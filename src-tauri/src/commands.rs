@@ -89,6 +89,24 @@ pub async fn eve_send_waypoint(
         .map_err(|_| Error::Unavailable)?
 }
 
+#[tauri::command]
+pub async fn install_route_database(
+    store: tauri::State<'_, crate::services::portable::PortableStore>,
+    installer: tauri::State<'_, crate::services::route_install::Installer>,
+) -> Result<crate::services::route_install::Outcome, crate::services::route_install::Error> {
+    let root = store.root().to_path_buf();
+    let installer = installer.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || installer.install(&root))
+        .await
+        .map_err(|_| crate::services::route_install::Error::Storage)?
+}
+#[tauri::command]
+pub fn get_route_install_status(
+    installer: tauri::State<'_, crate::services::route_install::Installer>,
+) -> Result<crate::services::route_install::Phase, crate::services::route_install::Error> {
+    installer.status()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

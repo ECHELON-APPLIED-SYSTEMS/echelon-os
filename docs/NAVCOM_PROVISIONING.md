@@ -2,8 +2,10 @@
 
 M2-C provides the accepted read-only plumbing. [M2-D](NAVCOM_M2D.md) now
 invokes it from an explicit NAVCOM load action; no automatic startup load is added.
-Absence of a snapshot is normal and does not trigger file creation, download,
-conversion, a fallback directory, or app startup failure. No production game data
+Absence of a snapshot is normal and does not itself trigger file creation, download,
+conversion, a fallback directory, or app startup failure. The M2-G-A2 draft adds a separate
+explicit first-install action; see [NAVCOM Data Manager](NAVCOM_DATA_MANAGER.md) for
+its pinned source, guarded publication, rights and pending native validation. No production game data
 is included in source, fixtures, CI, artifacts, or application packaging.
 
 ## Trust and explicit call boundary
@@ -74,8 +76,8 @@ shortest-hop/avoid semantics; routes are not safety or real-time claims.
    ```
 
    Use regular local folders/files, not symlinks, junctions, reparse points or
-   network locations. Do not overwrite existing data blindly. No provisioner,
-   installer, updater, filesystem picker or automatic copy is implemented here.
+   network locations. Do not overwrite existing data blindly. This manual alternative does not use the separately documented M2-G-A2
+   first-install action. No updater, filesystem picker or automatic copy is added.
 
 5. Keep the complete portable folder together when moving/relaunching it,
    including app-data. No absolute path is saved in settings. A future explicitly
