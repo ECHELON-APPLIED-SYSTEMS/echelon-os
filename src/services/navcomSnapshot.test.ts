@@ -31,6 +31,7 @@ describe('explicit private NAVCOM load service', () => {
     const snapshot = {
       graph: createStargateGraph([1, 2], [[1, 2]]),
       englishName: () => undefined,
+      hasSystem: (id: number) => id === 1 || id === 2,
       build: 42,
       systemCount: 2,
       searchSystems: () => Object.freeze([]),

@@ -2,6 +2,9 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { readNavcomSnapshot } from '../../services/navcomSnapshot';
 import type { NavcomSnapshotResult } from '../../services/navcomSnapshot';
 import type { RouteResult } from './routing';
+import { EveConnection, WaypointActions } from './EveSession';
+import type { Session } from './EveSession';
+import { useEveSession } from './useEveSession';
 
 type Loaded = Extract<NavcomSnapshotResult, { kind: 'ready' }>['snapshot'];
 type Phase = NavcomSnapshotResult | { kind: 'idle' | 'loading' };
@@ -28,15 +31,21 @@ function Endpoint({
   label,
   snapshot,
   onSelect,
+  preset,
 }: {
   label: string;
   snapshot: Loaded;
+  preset?: number | undefined;
   onSelect: (id: number | null) => void;
 }) {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(
+    preset
+      ? `${snapshot.englishName(preset) ?? 'Unnamed system'} — ${preset}`
+      : '',
+  );
   const [selected, setSelected] = useState<
     ReturnType<Loaded['searchSystems']>[number] | null
-  >(null);
+  >(preset ? { id: preset, name: snapshot.englishName(preset) } : null);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const input = useRef<HTMLInputElement>(null);
@@ -166,7 +175,16 @@ function Endpoint({
   );
 }
 
-function Planner({ snapshot }: { snapshot: Loaded }) {
+function Planner({
+  snapshot,
+  session,
+}: {
+  snapshot: Loaded;
+  session: Session;
+}) {
+  const [preset, setPreset] = useState<{ id: number; revision: number } | null>(
+    null,
+  );
   const [origin, setOrigin] = useState<number | null>(null);
   const [destination, setDestination] = useState<number | null>(null);
   const [route, setRoute] = useState<RouteResult | null>(null);
@@ -191,8 +209,41 @@ function Planner({ snapshot }: { snapshot: Loaded }) {
   }
   return (
     <>
+      {session.view.location && (
+        <>
+          <p>
+            Observed location:{' '}
+            {snapshot.englishName(session.view.location.system_id) ??
+              'System not named in snapshot'}{' '}
+            · System ID {session.view.location.system_id}.
+          </p>
+          <button
+            className="secondary"
+            disabled={
+              !snapshot.hasSystem(session.view.location.system_id) ||
+              session.view.location.stale
+            }
+            onClick={() => {
+              const id = session.view.location!.system_id;
+              if (!snapshot.hasSystem(id)) return;
+              setPreset((p) => ({ id, revision: (p?.revision ?? 0) + 1 }));
+              change(setOrigin, id);
+            }}
+          >
+            Use Current System as origin
+          </button>
+          {!snapshot.hasSystem(session.view.location.system_id) && (
+            <p>
+              Observed system is absent from this static snapshot; it cannot be
+              selected.
+            </p>
+          )}
+        </>
+      )}
       <div className="navcom-endpoints">
         <Endpoint
+          key={preset?.revision ?? 0}
+          preset={preset?.id}
           label="Origin"
           snapshot={snapshot}
           onSelect={(id) => change(setOrigin, id)}
@@ -210,6 +261,14 @@ function Planner({ snapshot }: { snapshot: Loaded }) {
       >
         Calculate minimum-hop route
       </button>
+      <WaypointActions
+        key={`${destination}-${session.view.character?.id}-${session.view.phase}`}
+        session={session}
+        destination={destination}
+        name={
+          destination !== null ? snapshot.englishName(destination) : undefined
+        }
+      />
       {error && (
         <p role="alert">
           The selected route could not be calculated. Select both systems again.
@@ -257,6 +316,7 @@ function Planner({ snapshot }: { snapshot: Loaded }) {
 }
 
 export function Navcom() {
+  const session = useEveSession();
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' });
   const [validatedAt, setValidatedAt] = useState('');
   async function load() {
@@ -272,6 +332,7 @@ export function Navcom() {
   }
   return (
     <section className="navcom-panel" aria-labelledby="navcom-title">
+      <EveConnection session={session} />
       <h2 id="navcom-title">Stargate route planner</h2>
       <p>
         Minimum hops through static stargates. This is not a safest-route
@@ -322,13 +383,13 @@ export function Navcom() {
             {phase.snapshot.systemCount} systems · Validated locally at{' '}
             {validatedAt}. This snapshot does not update live.
           </p>
-          <Planner snapshot={phase.snapshot} />
+          <Planner snapshot={phase.snapshot} session={session} />
         </>
       )}
       <p className="scope-note">
-        No live ESI connection or character location is read. Routes are not
-        sent to EVE. Compare them in game with matching shortest-route and
-        avoidance settings.
+        Static routes and ESI observations are separate. EVE requests require a
+        connected character and explicit confirmation. Compare routes in game
+        with matching shortest-route and avoidance settings.
       </p>
     </section>
   );

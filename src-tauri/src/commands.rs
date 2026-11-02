@@ -32,6 +32,63 @@ pub fn get_navcom_snapshot(
     crate::services::navcom::read(&store)
 }
 
+use crate::services::eve::{self, Action, Confirmation, Error, Eve, View};
+
+#[tauri::command]
+pub fn eve_status(eve: tauri::State<'_, Eve>) -> Result<View, Error> {
+    eve.status()
+}
+
+#[tauri::command]
+pub fn eve_disconnect(eve: tauri::State<'_, Eve>) -> Result<View, Error> {
+    eve.disconnect()
+}
+
+#[tauri::command]
+pub async fn eve_connect(eve: tauri::State<'_, Eve>) -> Result<View, Error> {
+    let eve = eve.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || eve.connect())
+        .await
+        .map_err(|_| Error::Unavailable)?
+}
+
+#[tauri::command]
+pub async fn eve_refresh_location(eve: tauri::State<'_, Eve>) -> Result<View, Error> {
+    let eve = eve.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || eve.refresh_location())
+        .await
+        .map_err(|_| Error::Unavailable)?
+}
+
+#[tauri::command]
+pub fn eve_prepare_waypoint(
+    destination: u64,
+    action: Action,
+    store: tauri::State<'_, crate::services::portable::PortableStore>,
+    eve: tauri::State<'_, Eve>,
+) -> Result<Confirmation, Error> {
+    eve::validate_destination(&store, destination)?;
+    eve.prepare(destination, action)
+}
+
+#[tauri::command]
+pub async fn eve_send_waypoint(
+    confirmation_id: String,
+    store: tauri::State<'_, crate::services::portable::PortableStore>,
+    eve: tauri::State<'_, Eve>,
+) -> Result<View, Error> {
+    if confirmation_id.len() != 43 {
+        return Err(Error::InvalidConfirmation);
+    }
+    // Re-read the pinned file at confirmation time. UI validation is not authority.
+    let destination = eve.confirmation_destination(&confirmation_id)?;
+    eve::validate_destination(&store, destination)?;
+    let eve = eve.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || eve.send_waypoint(&confirmation_id))
+        .await
+        .map_err(|_| Error::Unavailable)?
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

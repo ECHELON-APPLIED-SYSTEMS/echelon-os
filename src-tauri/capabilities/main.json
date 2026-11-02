@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main-metadata",
-  "description": "The local main window may read metadata, allowlisted Appearance, and the fixed private NAVCOM snapshot only.",
+  "description": "The local main window may use typed metadata, Appearance, fixed NAVCOM snapshot and explicit session-only EVE commands.",
   "local": true,
   "windows": [
     "main"
@@ -10,6 +10,12 @@
     "allow-get-app-metadata",
     "allow-get-theme",
     "allow-set-theme",
-    "allow-get-navcom-snapshot"
+    "allow-get-navcom-snapshot",
+    "allow-eve-status",
+    "allow-eve-connect",
+    "allow-eve-disconnect",
+    "allow-eve-refresh-location",
+    "allow-eve-prepare-waypoint",
+    "allow-eve-send-waypoint"
   ]
 }

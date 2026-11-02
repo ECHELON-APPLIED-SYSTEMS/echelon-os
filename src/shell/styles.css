@@ -601,3 +601,22 @@ select:disabled {
   margin: 0;
   padding: 12px;
 }
+
+.navcom-session,
+.navcom-waypoints {
+  margin: 20px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+.navcom-session button,
+.navcom-waypoints button {
+  margin: 4px 8px 4px 0;
+}
+.navcom-waypoints [role='alertdialog'] {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--accent);
+  background: var(--control);
+}
