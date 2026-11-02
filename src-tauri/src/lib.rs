@@ -240,9 +240,8 @@ mod tests {
                 r.body = InvokeBody::Json(
                     serde_json::json!({"destination":7,"action":"set-destination", "confirmationId":"test"}),
                 );
-                let error = get_ipc_response(window, r)
-                    .err()
-                    .expect("ACL must reject before dispatch");
+                let error =
+                    get_ipc_response(window, r).expect_err("ACL must reject before dispatch");
                 assert!(error.to_string().contains("not allowed"));
             }
         }
