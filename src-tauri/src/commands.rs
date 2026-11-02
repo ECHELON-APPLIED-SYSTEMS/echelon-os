@@ -107,6 +107,35 @@ pub fn get_route_install_status(
     installer.status()
 }
 
+#[tauri::command]
+pub async fn eve_prepare_route(
+    systems: crate::services::eve::route::RouteInput,
+    store: tauri::State<'_, crate::services::portable::PortableStore>,
+    eve: tauri::State<'_, Eve>,
+) -> Result<crate::services::eve::route::RouteConfirmation, Error> {
+    let root = store.root().to_path_buf();
+    let eve = eve.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || eve.prepare_route(&root, &systems.0))
+        .await
+        .map_err(|_| Error::Unavailable)?
+}
+#[tauri::command]
+pub async fn eve_send_route(
+    confirmation_id: String,
+    store: tauri::State<'_, crate::services::portable::PortableStore>,
+    eve: tauri::State<'_, Eve>,
+) -> Result<crate::services::eve::route::Report, Error> {
+    let root = store.root().to_path_buf();
+    let eve = eve.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || eve.send_route(&root, &confirmation_id))
+        .await
+        .map_err(|_| Error::Unavailable)?
+}
+#[tauri::command]
+pub fn eve_cancel_route(confirmation_id: String, eve: tauri::State<'_, Eve>) -> Result<(), Error> {
+    eve.cancel_route(&confirmation_id)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -63,6 +63,10 @@ impl Transport for CcpHttp {
             "age",
             "x-esi-error-limit-remain",
             "x-esi-error-limit-reset",
+            "x-ratelimit-group",
+            "x-ratelimit-limit",
+            "x-ratelimit-remaining",
+            "x-ratelimit-used",
         ] {
             if let Some(value) = response.headers().get(name).and_then(|v| v.to_str().ok()) {
                 if value.len() <= 512 {

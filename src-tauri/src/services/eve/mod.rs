@@ -1,6 +1,7 @@
 //! Session-only, explicit EVE SSO/ESI boundary. No disk writes, token IPC or polling.
 mod http;
 mod oauth;
+pub mod route;
 #[cfg(test)]
 mod tests;
 use http::{CcpHttp, Request, Response, Target, Transport};
@@ -51,6 +52,12 @@ pub enum Error {
     InvalidDestination,
     InvalidConfirmation,
     OutcomeUnknown,
+    RouteInvalid,
+    RouteTooLong,
+    OriginMismatch,
+    OriginStale,
+    RouteBudget,
+    RouteTime,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -114,6 +121,10 @@ struct State {
     confirmation: Option<Confirmation>,
     error: Option<Error>,
     blocked_until: u64,
+    route_confirmation: Option<route::Pending>,
+    location_revision: u64,
+    ui_remaining: Option<u64>,
+    active_route: Option<String>,
 }
 struct Inner {
     state: Mutex<State>,
@@ -157,6 +168,10 @@ impl Eve {
                     confirmation: None,
                     error: None,
                     blocked_until: 0,
+                    route_confirmation: None,
+                    location_revision: 0,
+                    ui_remaining: None,
+                    active_route: None,
                 }),
                 busy: AtomicBool::new(false),
                 http,
@@ -181,6 +196,7 @@ impl Eve {
         if s.session.as_ref().is_some_and(|v| v.expires <= now()) {
             s.session = None;
             s.confirmation = None;
+            s.route_confirmation = None;
             s.phase = Phase::Expired;
             s.error = Some(Error::Expired);
         }
@@ -201,8 +217,10 @@ impl Eve {
         {
             let mut s = self.state()?;
             s.generation = s.generation.wrapping_add(1);
+            s.ui_remaining = None;
             s.session = None;
             s.confirmation = None;
+            s.route_confirmation = None;
             s.phase = Phase::Disconnected;
             s.error = None;
         }
@@ -218,6 +236,7 @@ impl Eve {
                 ) {
                     s.session = None;
                     s.confirmation = None;
+                    s.route_confirmation = None;
                     s.phase = if error == Error::Expired {
                         Phase::Expired
                     } else {
@@ -246,8 +265,10 @@ impl Eve {
                 return Err(Error::Busy);
             }
             s.generation = s.generation.wrapping_add(1);
+            s.ui_remaining = None;
             s.session = None;
             s.confirmation = None;
+            s.route_confirmation = None;
             s.phase = Phase::Connecting;
             s.error = None;
             s.generation
@@ -360,6 +381,7 @@ impl Eve {
                         {
                             s.session = None;
                             s.confirmation = None;
+                            s.route_confirmation = None;
                             s.phase = Phase::Expired;
                             s.error = Some(Error::Expired);
                         }
@@ -387,6 +409,19 @@ impl Eve {
         Ok((s.generation, session.access.clone(), session.character.id))
     }
     fn limits(&self, generation: u64, response: &Response) {
+        if let Ok(mut s) = self.state() {
+            if s.generation == generation
+                && response
+                    .headers
+                    .get("x-ratelimit-group")
+                    .is_some_and(|v| v == "ui")
+            {
+                s.ui_remaining = response
+                    .headers
+                    .get("x-ratelimit-remaining")
+                    .and_then(|v| v.parse().ok());
+            }
+        }
         let at = now();
         let delay = response.headers.get("retry-after").and_then(|x| {
             x.parse::<u64>().ok().or_else(|| {
@@ -426,6 +461,8 @@ impl Eve {
         let (generation, access, character) = self.credentials()?;
         let etag = {
             let mut s = self.state()?;
+            s.location_revision = s.location_revision.wrapping_add(1);
+            s.route_confirmation = None;
             let session = s.session.as_mut().ok_or(Error::Disconnected)?;
             if let Some(l) = &mut session.location {
                 if now() < l.fresh_until {
@@ -518,6 +555,7 @@ impl Eve {
             action,
             expires_at: now() + 30,
         };
+        s.route_confirmation = None;
         s.confirmation = Some(confirmation.clone());
         Ok(confirmation)
     }

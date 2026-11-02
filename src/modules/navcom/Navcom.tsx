@@ -6,6 +6,7 @@ import { EveConnection, WaypointActions } from './EveSession';
 import type { Session } from './EveSession';
 import { useEveSession } from './useEveSession';
 import { RouteDataManager } from './RouteDataManager';
+import { RouteTransfer } from './RouteTransfer';
 
 type Loaded = Extract<NavcomSnapshotResult, { kind: 'ready' }>['snapshot'];
 type Phase = NavcomSnapshotResult | { kind: 'idle' | 'loading' };
@@ -33,10 +34,12 @@ function Endpoint({
   snapshot,
   onSelect,
   preset,
+  disabled = false,
 }: {
   label: string;
   snapshot: Loaded;
   preset?: number | undefined;
+  disabled?: boolean;
   onSelect: (id: number | null) => void;
 }) {
   const [query, setQuery] = useState(
@@ -79,6 +82,7 @@ function Endpoint({
       <label htmlFor={id}>{label} system</label>
       <div className="navcom-combobox">
         <input
+          disabled={disabled}
           ref={input}
           id={id}
           role="combobox"
@@ -191,6 +195,7 @@ function Planner({
   const [route, setRoute] = useState<RouteResult | null>(null);
   const [error, setError] = useState(false);
   const [visible, setVisible] = useState(100);
+  const [routeRevision, setRouteRevision] = useState(0);
   function change(set: (id: number | null) => void, id: number | null) {
     set(id);
     setRoute(null);
@@ -198,6 +203,7 @@ function Planner({
     setVisible(100);
   }
   function calculate() {
+    setRouteRevision((v) => v + 1);
     if (origin === null || destination === null) return;
     try {
       setRoute(snapshot.graph.shortestRoute(origin, destination));
@@ -221,6 +227,7 @@ function Planner({
           <button
             className="secondary"
             disabled={
+              session.busy ||
               !snapshot.hasSystem(session.view.location.system_id) ||
               session.view.location.stale
             }
@@ -245,11 +252,13 @@ function Planner({
         <Endpoint
           key={preset?.revision ?? 0}
           preset={preset?.id}
+          disabled={session.busy}
           label="Origin"
           snapshot={snapshot}
           onSelect={(id) => change(setOrigin, id)}
         />
         <Endpoint
+          disabled={session.busy}
           label="Destination"
           snapshot={snapshot}
           onSelect={(id) => change(setDestination, id)}
@@ -257,7 +266,7 @@ function Planner({
       </div>
       <button
         className="secondary"
-        disabled={origin === null || destination === null}
+        disabled={session.busy || origin === null || destination === null}
         onClick={calculate}
       >
         Calculate minimum-hop route
@@ -290,6 +299,14 @@ function Planner({
                   : ''}
                 {route.jumps} jumps · {route.systems.length} systems
               </p>
+              {route.kind === 'route' && (
+                <RouteTransfer
+                  key={routeRevision}
+                  systems={route.systems}
+                  session={session}
+                  name={snapshot.englishName}
+                />
+              )}
               <ol className="navcom-steps">
                 {route.systems.slice(0, visible).map((id) => (
                   <li key={id}>
@@ -342,7 +359,7 @@ export function Navcom() {
       </p>
       <button
         className="secondary"
-        disabled={phase.kind === 'loading'}
+        disabled={phase.kind === 'loading' || session.busy}
         onClick={() => void load()}
       >
         {phase.kind === 'loading'

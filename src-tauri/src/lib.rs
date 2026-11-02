@@ -77,7 +77,10 @@ fn configure<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R>
             commands::eve_disconnect,
             commands::eve_refresh_location,
             commands::eve_prepare_waypoint,
-            commands::eve_send_waypoint
+            commands::eve_send_waypoint,
+            commands::eve_prepare_route,
+            commands::eve_send_route,
+            commands::eve_cancel_route
         ])
 }
 
@@ -245,6 +248,9 @@ mod tests {
             "eve_refresh_location",
             "eve_prepare_waypoint",
             "eve_send_waypoint",
+            "eve_prepare_route",
+            "eve_send_route",
+            "eve_cancel_route",
         ] {
             for (window, origin) in [(&other, local), (&main, "https://example.com")] {
                 let mut r = request(command, origin);

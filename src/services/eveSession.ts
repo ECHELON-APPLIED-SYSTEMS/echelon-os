@@ -17,6 +17,12 @@ export const errors = [
   'invalid-destination',
   'invalid-confirmation',
   'outcome-unknown',
+  'route-invalid',
+  'route-too-long',
+  'origin-mismatch',
+  'origin-stale',
+  'route-budget',
+  'route-time',
 ] as const;
 export type EveError = (typeof errors)[number];
 export type Character = Readonly<{ id: number; name: string }>;
@@ -53,6 +59,19 @@ export const disconnected: View = Object.freeze({
   expires_at: null,
 });
 export const eveMessages: Record<EveError, string> = {
+  'route-invalid':
+    'The planned route or pinned snapshot changed or is invalid. Load data and recalculate.',
+  'route-too-long':
+    'Full transfer is limited to 10 waypoint requests. Use Set Destination for a longer route.',
+  'origin-mismatch':
+    'The native character location differs from the planned origin. Refresh location, use current system and recalculate.',
+  'origin-stale':
+    'Native location freshness expired. Explicitly refresh location and prepare the route again.',
+  'route-budget':
+    'Rate-limit headroom is insufficient or unverified. No further requests were sent.',
+  'route-time':
+    'The route transfer work budget was exhausted. No further requests were sent.',
+
   unavailable: 'The EVE service is unavailable. Retry explicitly when ready.',
   unsupported: 'EVE sign-in requires the Windows desktop application.',
   busy: 'An EVE operation is already in progress.',
