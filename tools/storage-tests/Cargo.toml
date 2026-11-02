@@ -6,6 +6,7 @@ publish = false
 rust-version = "1.90"
 
 [dependencies]
+zip = { version = "=9.0.0", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 base64 = "=0.22.1"
 getrandom = "=0.3.4"
 sha2 = "=0.10.9"
