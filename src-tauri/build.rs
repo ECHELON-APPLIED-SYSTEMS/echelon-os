@@ -19,6 +19,9 @@ fn main() {
                 "eve_refresh_location",
                 "eve_prepare_waypoint",
                 "eve_send_waypoint",
+                "eve_prepare_route",
+                "eve_send_route",
+                "eve_cancel_route",
             ])),
     )
     .expect("failed to build ECHELON OS application resources");

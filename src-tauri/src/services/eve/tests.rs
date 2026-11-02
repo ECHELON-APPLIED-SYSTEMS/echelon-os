@@ -32,7 +32,7 @@ fn sign(c: &Claims) -> String {
 fn keys() -> &'static [u8] {
     include_bytes!("synthetic-test-jwks.json")
 }
-fn response(status: u16, body: serde_json::Value) -> Response {
+pub(super) fn response(status: u16, body: serde_json::Value) -> Response {
     Response {
         status,
         headers: BTreeMap::new(),
@@ -46,19 +46,19 @@ fn discovery() -> Response {
     )
 }
 #[derive(Debug, PartialEq, Eq)]
-enum Call {
+pub(super) enum Call {
     Discovery,
     Jwks,
     Token,
     Location(u64),
     Waypoint(u64, bool),
 }
-struct Fake {
+pub(super) struct Fake {
     responses: Mutex<VecDeque<Result<Response, Error>>>,
-    calls: Mutex<Vec<Call>>,
+    pub(super) calls: Mutex<Vec<Call>>,
 }
 impl Fake {
-    fn new(responses: Vec<Result<Response, Error>>) -> Arc<Self> {
+    pub(super) fn new(responses: Vec<Result<Response, Error>>) -> Arc<Self> {
         Arc::new(Self {
             responses: Mutex::new(responses.into()),
             calls: Mutex::new(vec![]),
@@ -96,7 +96,7 @@ impl Transport for Fake {
             .expect("mock response required")
     }
 }
-fn seeded(fake: Arc<Fake>) -> Eve {
+pub(super) fn seeded(fake: Arc<Fake>) -> Eve {
     let eve = Eve::new(fake);
     {
         let mut s = eve.state().unwrap();

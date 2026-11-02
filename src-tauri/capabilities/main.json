@@ -18,6 +18,9 @@
     "allow-eve-prepare-waypoint",
     "allow-eve-send-waypoint",
     "allow-install-route-database",
-    "allow-get-route-install-status"
+    "allow-get-route-install-status",
+    "allow-eve-prepare-route",
+    "allow-eve-send-route",
+    "allow-eve-cancel-route"
   ]
 }
