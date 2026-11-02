@@ -11,6 +11,8 @@ fn main() {
                 "get_theme",
                 "set_theme",
                 "get_navcom_snapshot",
+                "install_route_database",
+                "get_route_install_status",
                 "eve_status",
                 "eve_connect",
                 "eve_disconnect",

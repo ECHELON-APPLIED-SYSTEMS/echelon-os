@@ -5,6 +5,7 @@ import type { RouteResult } from './routing';
 import { EveConnection, WaypointActions } from './EveSession';
 import type { Session } from './EveSession';
 import { useEveSession } from './useEveSession';
+import { RouteDataManager } from './RouteDataManager';
 
 type Loaded = Extract<NavcomSnapshotResult, { kind: 'ready' }>['snapshot'];
 type Phase = NavcomSnapshotResult | { kind: 'idle' | 'loading' };
@@ -362,10 +363,12 @@ export function Navcom() {
         <p role="status">Reading and validating route data…</p>
       )}
       {phase.kind === 'missing' && (
-        <p role="status">
-          Route data is not provisioned. Use the documented private snapshot
-          procedure for this application. No file was created.
-        </p>
+        <>
+          <p role="status">
+            Route data is not provisioned. No file was created.
+          </p>
+          <RouteDataManager onInstalled={load} />
+        </>
       )}
       {phase.kind === 'preview' && (
         <p role="status">

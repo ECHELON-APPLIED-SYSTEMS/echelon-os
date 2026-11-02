@@ -62,18 +62,23 @@ fn configure<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R>
     let eve = services::eve::Eve::offline_for_acl_tests();
     #[cfg(not(test))]
     let eve = services::eve::Eve::default();
-    builder.manage(eve).invoke_handler(tauri::generate_handler![
-        commands::get_app_metadata,
-        commands::get_theme,
-        commands::set_theme,
-        commands::get_navcom_snapshot,
-        commands::eve_status,
-        commands::eve_connect,
-        commands::eve_disconnect,
-        commands::eve_refresh_location,
-        commands::eve_prepare_waypoint,
-        commands::eve_send_waypoint
-    ])
+    builder
+        .manage(eve)
+        .manage(services::route_install::Installer::default())
+        .invoke_handler(tauri::generate_handler![
+            commands::get_app_metadata,
+            commands::get_theme,
+            commands::set_theme,
+            commands::get_navcom_snapshot,
+            commands::install_route_database,
+            commands::get_route_install_status,
+            commands::eve_status,
+            commands::eve_connect,
+            commands::eve_disconnect,
+            commands::eve_refresh_location,
+            commands::eve_prepare_waypoint,
+            commands::eve_send_waypoint
+        ])
 }
 
 #[cfg(test)]
@@ -149,6 +154,9 @@ mod tests {
                 .build()
                 .unwrap();
             let local = "http://tauri.localhost";
+            let installer_error = get_ipc_response(&main, request("install_route_database", local))
+                .expect_err("test builds must refuse real downloads before HTTP");
+            assert_eq!(installer_error, serde_json::json!("location"));
             assert_eq!(
                 get_ipc_response(&main, request("get_navcom_snapshot", local))
                     .unwrap()
@@ -245,6 +253,39 @@ mod tests {
                 );
                 let error =
                     get_ipc_response(window, r).expect_err("ACL must reject before dispatch");
+                assert!(error.to_string().contains("not allowed"));
+            }
+        }
+    }
+
+    #[test]
+    fn route_installer_commands_are_main_local_only() {
+        let app = configure(mock_builder())
+            .build(tauri::generate_context!())
+            .unwrap();
+        let main = WebviewWindowBuilder::new(&app, "main", Default::default())
+            .build()
+            .unwrap();
+        let other = WebviewWindowBuilder::new(&app, "other", Default::default())
+            .build()
+            .unwrap();
+        assert_eq!(
+            get_ipc_response(
+                &main,
+                request("get_route_install_status", "http://tauri.localhost")
+            )
+            .unwrap()
+            .deserialize::<serde_json::Value>()
+            .unwrap(),
+            serde_json::json!("idle")
+        );
+        for command in ["install_route_database", "get_route_install_status"] {
+            for (window, origin) in [
+                (&other, "http://tauri.localhost"),
+                (&main, "https://example.com"),
+            ] {
+                let error = get_ipc_response(window, request(command, origin))
+                    .expect_err("ACL must reject before dispatch");
                 assert!(error.to_string().contains("not allowed"));
             }
         }

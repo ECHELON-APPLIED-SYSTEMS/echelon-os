@@ -193,7 +193,7 @@ fn open(path: &Path, directory: bool) -> Result<File, SnapshotError> {
     }
     Ok(file)
 }
-fn read_root(root: &Path) -> Result<Option<String>, SnapshotError> {
+pub(super) fn read_root(root: &Path) -> Result<Option<String>, SnapshotError> {
     read_with_hook(root, || {})
 }
 fn read_with_hook(
@@ -334,6 +334,52 @@ fn read_with_hook(
     String::from_utf8(bytes)
         .map(Some)
         .map_err(|_| SnapshotError::InvalidUtf8)
+}
+
+/// Internal mutation guard for the fixed installer, reusing the reader's exact
+/// no-follow directory identity rules. No path is exposed through IPC.
+pub(super) struct DirectoryGuard(Vec<(std::path::PathBuf, Metadata, File)>);
+impl DirectoryGuard {
+    pub(super) fn root(root: &Path) -> Result<Self, SnapshotError> {
+        if !root.is_absolute() {
+            return Err(SnapshotError::UnsafePath);
+        }
+        let ancestors: Vec<_> = root.ancestors().collect();
+        if ancestors.len() > 128 {
+            return Err(SnapshotError::UnsafePath);
+        }
+        let mut guard = Self(Vec::new());
+        for path in ancestors.into_iter().rev() {
+            guard.hold(path)?;
+        }
+        Ok(guard)
+    }
+    pub(super) fn hold(&mut self, path: &Path) -> Result<(), SnapshotError> {
+        self.verify()?;
+        let m = metadata(path)?.ok_or(SnapshotError::UnsafePath)?;
+        if link(&m) || !m.is_dir() {
+            return Err(SnapshotError::UnsafePath);
+        }
+        let h = open(path, true)?;
+        let opened = h.metadata().map_err(|_| SnapshotError::Unreadable)?;
+        if !same_directory(path, &m, &opened, &h)? {
+            return Err(SnapshotError::Changed);
+        }
+        self.0.push((path.to_path_buf(), m, h));
+        self.verify()
+    }
+    pub(super) fn verify(&self) -> Result<(), SnapshotError> {
+        for (path, old, h) in &self.0 {
+            let m = metadata(path)?.ok_or(SnapshotError::Changed)?;
+            if link(&m) || !m.is_dir() || !same_directory(path, old, &m, h)? {
+                return Err(SnapshotError::Changed);
+            }
+        }
+        Ok(())
+    }
+    pub(super) fn directory(&self) -> &File {
+        &self.0.last().expect("guard holds a directory").2
+    }
 }
 
 #[cfg(test)]

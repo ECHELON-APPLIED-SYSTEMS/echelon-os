@@ -5,7 +5,8 @@ import { readNavcomSnapshot } from '../../services/navcomSnapshot';
 import { loadStargateSnapshot } from './snapshot';
 import { Navcom } from './Navcom';
 
-vi.mock('../../services/navcomSnapshot', () => ({
+vi.mock('../../services/navcomSnapshot', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../services/navcomSnapshot')>()),
   readNavcomSnapshot: vi.fn(),
 }));
 vi.stubGlobal('crypto', webcrypto);

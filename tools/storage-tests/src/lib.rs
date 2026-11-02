@@ -10,3 +10,6 @@ pub mod eve;
 
 #[path = "../../../src-tauri/src/services/sde/mod.rs"]
 pub mod sde;
+
+#[path="../../../src-tauri/src/services/route_install/mod.rs"]
+pub mod route_install;
